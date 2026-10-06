@@ -5,7 +5,6 @@ import senac.tsi.apipapas.model.Papa;
 import senac.tsi.apipapas.model.SituacaoPontificado;
 import senac.tsi.apipapas.repository.PapaRepository;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springdoc.core.annotations.ParameterObject;
@@ -32,16 +31,13 @@ public class PapaController {
         this.pagedAssembler = pagedAssembler;
     }
 
-    @Operation(summary = "Lista os papas", description = "Retorna os papas paginados. Ex.: /papas?page=0&size=5&sort=numeroOrdem")
-    @ApiResponse(responseCode = "200", description = "Lista retornada com sucesso")
+    @Operation(summary = "Lista os papas")
     @GetMapping
     public PagedModel<EntityModel<Papa>> listar(@ParameterObject Pageable pageable) {
         return pagedAssembler.toModel(repository.findAll(pageable), this::toModel);
     }
 
     @Operation(summary = "Busca um papa pelo id")
-    @ApiResponse(responseCode = "200", description = "Papa encontrado")
-    @ApiResponse(responseCode = "404", description = "Papa não encontrado")
     @GetMapping("/{id}")
     public EntityModel<Papa> buscar(@PathVariable Long id) {
         Papa papa = repository.findById(id)
@@ -49,10 +45,7 @@ public class PapaController {
         return toModel(papa);
     }
 
-    @Operation(summary = "Cadastra um papa",
-            description = "Se a situação for EM_EXERCICIO, deixe fimPontificado vazio.")
-    @ApiResponse(responseCode = "201", description = "Papa criado")
-    @ApiResponse(responseCode = "400", description = "Dados inválidos")
+    @Operation(summary = "Cadastra um papa")
     @PostMapping
     public ResponseEntity<EntityModel<Papa>> criar(@Valid @RequestBody Papa novoPapa) {
         Papa salvo = repository.save(novoPapa);
@@ -61,9 +54,6 @@ public class PapaController {
     }
 
     @Operation(summary = "Atualiza um papa")
-    @ApiResponse(responseCode = "200", description = "Papa atualizado")
-    @ApiResponse(responseCode = "400", description = "Dados inválidos")
-    @ApiResponse(responseCode = "404", description = "Papa não encontrado")
     @PutMapping("/{id}")
     public EntityModel<Papa> atualizar(@PathVariable Long id, @Valid @RequestBody Papa dados) {
         Papa papa = repository.findById(id)
@@ -78,11 +68,7 @@ public class PapaController {
         return toModel(repository.save(papa));
     }
 
-    @Operation(summary = "Exclui um papa",
-            description = "Só é possível excluir um papa sem encíclicas, conclave, santos ou concílios ligados a ele.")
-    @ApiResponse(responseCode = "204", description = "Papa excluído")
-    @ApiResponse(responseCode = "404", description = "Papa não encontrado")
-    @ApiResponse(responseCode = "409", description = "Papa possui registros vinculados")
+    @Operation(summary = "Exclui um papa")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> excluir(@PathVariable Long id) {
         if (!repository.existsById(id)) {
@@ -92,10 +78,7 @@ public class PapaController {
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(summary = "Busca papas pela situação",
-            description = "Valores aceitos: EM_EXERCICIO, FALECIMENTO, RENUNCIA. Ex.: /papas/situacao/RENUNCIA")
-    @ApiResponse(responseCode = "200", description = "Lista retornada com sucesso")
-    @ApiResponse(responseCode = "400", description = "Situação inválida")
+    @Operation(summary = "Busca papas pela situação")
     @GetMapping("/situacao/{situacao}")
     public PagedModel<EntityModel<Papa>> buscarPorSituacao(@PathVariable SituacaoPontificado situacao,
                                                            @ParameterObject Pageable pageable) {

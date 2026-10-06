@@ -6,7 +6,6 @@ import senac.tsi.apipapas.model.Santo;
 import senac.tsi.apipapas.repository.PapaRepository;
 import senac.tsi.apipapas.repository.SantoRepository;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springdoc.core.annotations.ParameterObject;
@@ -36,16 +35,13 @@ public class SantoController {
         this.pagedAssembler = pagedAssembler;
     }
 
-    @Operation(summary = "Lista os santos", description = "Retorna os santos paginados.")
-    @ApiResponse(responseCode = "200", description = "Lista retornada com sucesso")
+    @Operation(summary = "Lista os santos")
     @GetMapping
     public PagedModel<EntityModel<Santo>> listar(@ParameterObject Pageable pageable) {
         return pagedAssembler.toModel(repository.findAll(pageable), this::toModel);
     }
 
     @Operation(summary = "Busca um santo pelo id")
-    @ApiResponse(responseCode = "200", description = "Santo encontrado")
-    @ApiResponse(responseCode = "404", description = "Santo não encontrado")
     @GetMapping("/{id}")
     public EntityModel<Santo> buscar(@PathVariable Long id) {
         Santo santo = repository.findById(id)
@@ -53,11 +49,7 @@ public class SantoController {
         return toModel(santo);
     }
 
-    @Operation(summary = "Cadastra um santo",
-            description = "Informe o papa que canonizou pelo id. Ex.: \"canonizadoPor\": {\"id\": 7}")
-    @ApiResponse(responseCode = "201", description = "Santo criado")
-    @ApiResponse(responseCode = "400", description = "Dados inválidos")
-    @ApiResponse(responseCode = "404", description = "Papa não encontrado")
+    @Operation(summary = "Cadastra um santo")
     @PostMapping
     public ResponseEntity<EntityModel<Santo>> criar(@Valid @RequestBody Santo novoSanto) {
         novoSanto.setCanonizadoPor(buscarPapa(novoSanto.getCanonizadoPor().getId()));
@@ -67,9 +59,6 @@ public class SantoController {
     }
 
     @Operation(summary = "Atualiza um santo")
-    @ApiResponse(responseCode = "200", description = "Santo atualizado")
-    @ApiResponse(responseCode = "400", description = "Dados inválidos")
-    @ApiResponse(responseCode = "404", description = "Santo ou papa não encontrado")
     @PutMapping("/{id}")
     public EntityModel<Santo> atualizar(@PathVariable Long id, @Valid @RequestBody Santo dados) {
         Santo santo = repository.findById(id)
@@ -82,8 +71,6 @@ public class SantoController {
     }
 
     @Operation(summary = "Exclui um santo")
-    @ApiResponse(responseCode = "204", description = "Santo excluído")
-    @ApiResponse(responseCode = "404", description = "Santo não encontrado")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> excluir(@PathVariable Long id) {
         if (!repository.existsById(id)) {
@@ -93,8 +80,7 @@ public class SantoController {
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(summary = "Busca santos por país de origem", description = "Ex.: /santos/pais/Brasil")
-    @ApiResponse(responseCode = "200", description = "Lista retornada com sucesso")
+    @Operation(summary = "Busca santos por país de origem")
     @GetMapping("/pais/{pais}")
     public PagedModel<EntityModel<Santo>> buscarPorPais(@PathVariable String pais,
                                                         @ParameterObject Pageable pageable) {

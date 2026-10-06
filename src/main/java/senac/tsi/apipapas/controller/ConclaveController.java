@@ -6,7 +6,6 @@ import senac.tsi.apipapas.model.Papa;
 import senac.tsi.apipapas.repository.ConclaveRepository;
 import senac.tsi.apipapas.repository.PapaRepository;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springdoc.core.annotations.ParameterObject;
@@ -36,16 +35,13 @@ public class ConclaveController {
         this.pagedAssembler = pagedAssembler;
     }
 
-    @Operation(summary = "Lista os conclaves", description = "Retorna os conclaves paginados.")
-    @ApiResponse(responseCode = "200", description = "Lista retornada com sucesso")
+    @Operation(summary = "Lista os conclaves")
     @GetMapping
     public PagedModel<EntityModel<Conclave>> listar(@ParameterObject Pageable pageable) {
         return pagedAssembler.toModel(repository.findAll(pageable), this::toModel);
     }
 
     @Operation(summary = "Busca um conclave pelo id")
-    @ApiResponse(responseCode = "200", description = "Conclave encontrado")
-    @ApiResponse(responseCode = "404", description = "Conclave não encontrado")
     @GetMapping("/{id}")
     public EntityModel<Conclave> buscar(@PathVariable Long id) {
         Conclave conclave = repository.findById(id)
@@ -53,12 +49,7 @@ public class ConclaveController {
         return toModel(conclave);
     }
 
-    @Operation(summary = "Cadastra um conclave",
-            description = "Informe o papa eleito pelo id. Ex.: \"papa\": {\"id\": 1}. Cada papa só pode ter um conclave.")
-    @ApiResponse(responseCode = "201", description = "Conclave criado")
-    @ApiResponse(responseCode = "400", description = "Dados inválidos")
-    @ApiResponse(responseCode = "404", description = "Papa não encontrado")
-    @ApiResponse(responseCode = "409", description = "Esse papa já possui um conclave")
+    @Operation(summary = "Cadastra um conclave")
     @PostMapping
     public ResponseEntity<EntityModel<Conclave>> criar(@Valid @RequestBody Conclave novoConclave) {
         novoConclave.setPapa(buscarPapa(novoConclave.getPapa().getId()));
@@ -68,9 +59,6 @@ public class ConclaveController {
     }
 
     @Operation(summary = "Atualiza um conclave")
-    @ApiResponse(responseCode = "200", description = "Conclave atualizado")
-    @ApiResponse(responseCode = "400", description = "Dados inválidos")
-    @ApiResponse(responseCode = "404", description = "Conclave ou papa não encontrado")
     @PutMapping("/{id}")
     public EntityModel<Conclave> atualizar(@PathVariable Long id, @Valid @RequestBody Conclave dados) {
         Conclave conclave = repository.findById(id)
@@ -84,8 +72,6 @@ public class ConclaveController {
     }
 
     @Operation(summary = "Exclui um conclave")
-    @ApiResponse(responseCode = "204", description = "Conclave excluído")
-    @ApiResponse(responseCode = "404", description = "Conclave não encontrado")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> excluir(@PathVariable Long id) {
         if (!repository.existsById(id)) {
@@ -95,9 +81,7 @@ public class ConclaveController {
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(summary = "Busca conclaves rápidos",
-            description = "Retorna os conclaves decididos com até N escrutínios. Ex.: /conclaves/rapidos?maxEscrutinios=4")
-    @ApiResponse(responseCode = "200", description = "Lista retornada com sucesso")
+    @Operation(summary = "Busca conclaves rápidos")
     @GetMapping("/rapidos")
     public PagedModel<EntityModel<Conclave>> buscarRapidos(@RequestParam Integer maxEscrutinios,
                                                            @ParameterObject Pageable pageable) {

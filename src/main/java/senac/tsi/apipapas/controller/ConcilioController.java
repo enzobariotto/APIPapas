@@ -6,7 +6,6 @@ import senac.tsi.apipapas.model.Papa;
 import senac.tsi.apipapas.repository.ConcilioRepository;
 import senac.tsi.apipapas.repository.PapaRepository;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springdoc.core.annotations.ParameterObject;
@@ -39,16 +38,13 @@ public class ConcilioController {
         this.pagedAssembler = pagedAssembler;
     }
 
-    @Operation(summary = "Lista os concílios", description = "Retorna os concílios paginados, com os papas de cada um.")
-    @ApiResponse(responseCode = "200", description = "Lista retornada com sucesso")
+    @Operation(summary = "Lista os concílios")
     @GetMapping
     public PagedModel<EntityModel<Concilio>> listar(@ParameterObject Pageable pageable) {
         return pagedAssembler.toModel(repository.findAll(pageable), this::toModel);
     }
 
     @Operation(summary = "Busca um concílio pelo id")
-    @ApiResponse(responseCode = "200", description = "Concílio encontrado")
-    @ApiResponse(responseCode = "404", description = "Concílio não encontrado")
     @GetMapping("/{id}")
     public EntityModel<Concilio> buscar(@PathVariable Long id) {
         Concilio concilio = repository.findById(id)
@@ -56,11 +52,7 @@ public class ConcilioController {
         return toModel(concilio);
     }
 
-    @Operation(summary = "Cadastra um concílio",
-            description = "Informe os papas pelo id. Ex.: \"papas\": [{\"id\": 2}, {\"id\": 3}]")
-    @ApiResponse(responseCode = "201", description = "Concílio criado")
-    @ApiResponse(responseCode = "400", description = "Dados inválidos")
-    @ApiResponse(responseCode = "404", description = "Algum papa não foi encontrado")
+    @Operation(summary = "Cadastra um concílio")
     @PostMapping
     public ResponseEntity<EntityModel<Concilio>> criar(@Valid @RequestBody Concilio novoConcilio) {
         novoConcilio.setPapas(buscarPapas(novoConcilio.getPapas()));
@@ -70,9 +62,6 @@ public class ConcilioController {
     }
 
     @Operation(summary = "Atualiza um concílio")
-    @ApiResponse(responseCode = "200", description = "Concílio atualizado")
-    @ApiResponse(responseCode = "400", description = "Dados inválidos")
-    @ApiResponse(responseCode = "404", description = "Concílio ou papa não encontrado")
     @PutMapping("/{id}")
     public EntityModel<Concilio> atualizar(@PathVariable Long id, @Valid @RequestBody Concilio dados) {
         Concilio concilio = repository.findById(id)
@@ -86,8 +75,6 @@ public class ConcilioController {
     }
 
     @Operation(summary = "Exclui um concílio")
-    @ApiResponse(responseCode = "204", description = "Concílio excluído")
-    @ApiResponse(responseCode = "404", description = "Concílio não encontrado")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> excluir(@PathVariable Long id) {
         if (!repository.existsById(id)) {
@@ -97,8 +84,7 @@ public class ConcilioController {
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(summary = "Busca concílios pelo nome", description = "Ex.: /concilios/busca?nome=vaticano")
-    @ApiResponse(responseCode = "200", description = "Lista retornada com sucesso")
+    @Operation(summary = "Busca concílios pelo nome")
     @GetMapping("/busca")
     public PagedModel<EntityModel<Concilio>> buscarPorNome(@RequestParam String nome,
                                                            @ParameterObject Pageable pageable) {
