@@ -16,7 +16,7 @@ public class Papa {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Schema(example = "7")
+    @Schema(accessMode = Schema.AccessMode.READ_ONLY)
     private Long id;
 
     @NotBlank(message = "O nome papal é obrigatório")

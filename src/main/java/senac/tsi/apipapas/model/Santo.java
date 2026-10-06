@@ -11,7 +11,7 @@ public class Santo {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Schema(example = "5")
+    @Schema(accessMode = Schema.AccessMode.READ_ONLY)
     private Long id;
 
     @NotBlank(message = "O nome é obrigatório")
@@ -29,6 +29,7 @@ public class Santo {
 
     @ManyToOne
     @NotNull(message = "O papa que canonizou é obrigatório")
+    @Schema(example = "{\"id\": 6}")
     private Papa canonizadoPor;
 
     public Santo() {

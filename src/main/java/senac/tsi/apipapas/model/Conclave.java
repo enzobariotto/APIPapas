@@ -11,7 +11,7 @@ public class Conclave {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Schema(example = "6")
+    @Schema(accessMode = Schema.AccessMode.READ_ONLY)
     private Long id;
 
     @NotNull(message = "A data de início é obrigatória")
@@ -37,6 +37,7 @@ public class Conclave {
     @OneToOne
     @JoinColumn(name = "papa_id", unique = true)
     @NotNull(message = "O papa eleito é obrigatório")
+    @Schema(example = "{\"id\": 3}")
     private Papa papa;
 
     public Conclave() {

@@ -52,6 +52,7 @@ public class ConclaveController {
     @Operation(summary = "Cadastra um conclave")
     @PostMapping
     public ResponseEntity<EntityModel<Conclave>> criar(@Valid @RequestBody Conclave novoConclave) {
+        novoConclave.setId(null);
         novoConclave.setPapa(buscarPapa(novoConclave.getPapa().getId()));
         Conclave salvo = repository.save(novoConclave);
         return ResponseEntity.created(linkTo(methodOn(ConclaveController.class).buscar(salvo.getId())).toUri())

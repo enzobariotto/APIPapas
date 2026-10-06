@@ -11,7 +11,7 @@ public class Enciclica {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Schema(example = "1")
+    @Schema(accessMode = Schema.AccessMode.READ_ONLY)
     private Long id;
 
     @NotBlank(message = "O título é obrigatório")
@@ -30,6 +30,7 @@ public class Enciclica {
 
     @ManyToOne
     @NotNull(message = "O papa é obrigatório")
+    @Schema(example = "{\"id\": 6}")
     private Papa papa;
 
     public Enciclica() {

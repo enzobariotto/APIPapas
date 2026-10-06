@@ -13,7 +13,7 @@ public class Concilio {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Schema(example = "2")
+    @Schema(accessMode = Schema.AccessMode.READ_ONLY)
     private Long id;
 
     @NotBlank(message = "O nome é obrigatório")
@@ -39,6 +39,7 @@ public class Concilio {
             joinColumns = @JoinColumn(name = "concilio_id"),
             inverseJoinColumns = @JoinColumn(name = "papa_id"))
     @NotEmpty(message = "Informe pelo menos um papa")
+    @Schema(example = "[{\"id\": 2}, {\"id\": 3}]")
     private List<Papa> papas = new ArrayList<>();
 
     public Concilio() {

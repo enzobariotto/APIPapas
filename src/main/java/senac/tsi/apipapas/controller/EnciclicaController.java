@@ -52,6 +52,7 @@ public class EnciclicaController {
     @Operation(summary = "Cadastra uma encíclica")
     @PostMapping
     public ResponseEntity<EntityModel<Enciclica>> criar(@Valid @RequestBody Enciclica novaEnciclica) {
+        novaEnciclica.setId(null);
         novaEnciclica.setPapa(buscarPapa(novaEnciclica.getPapa().getId()));
         Enciclica salva = repository.save(novaEnciclica);
         return ResponseEntity.created(linkTo(methodOn(EnciclicaController.class).buscar(salva.getId())).toUri())

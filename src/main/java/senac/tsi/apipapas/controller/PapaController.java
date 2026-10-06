@@ -48,6 +48,7 @@ public class PapaController {
     @Operation(summary = "Cadastra um papa")
     @PostMapping
     public ResponseEntity<EntityModel<Papa>> criar(@Valid @RequestBody Papa novoPapa) {
+        novoPapa.setId(null);
         Papa salvo = repository.save(novoPapa);
         EntityModel<Papa> model = toModel(salvo);
         return ResponseEntity.created(linkTo(methodOn(PapaController.class).buscar(salvo.getId())).toUri()).body(model);

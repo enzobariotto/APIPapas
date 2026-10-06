@@ -55,6 +55,7 @@ public class ConcilioController {
     @Operation(summary = "Cadastra um concílio")
     @PostMapping
     public ResponseEntity<EntityModel<Concilio>> criar(@Valid @RequestBody Concilio novoConcilio) {
+        novoConcilio.setId(null);
         novoConcilio.setPapas(buscarPapas(novoConcilio.getPapas()));
         Concilio salvo = repository.save(novoConcilio);
         return ResponseEntity.created(linkTo(methodOn(ConcilioController.class).buscar(salvo.getId())).toUri())

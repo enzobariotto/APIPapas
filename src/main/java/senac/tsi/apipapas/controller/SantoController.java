@@ -52,6 +52,7 @@ public class SantoController {
     @Operation(summary = "Cadastra um santo")
     @PostMapping
     public ResponseEntity<EntityModel<Santo>> criar(@Valid @RequestBody Santo novoSanto) {
+        novoSanto.setId(null);
         novoSanto.setCanonizadoPor(buscarPapa(novoSanto.getCanonizadoPor().getId()));
         Santo salvo = repository.save(novoSanto);
         return ResponseEntity.created(linkTo(methodOn(SantoController.class).buscar(salvo.getId())).toUri())
