@@ -16,7 +16,8 @@ import java.util.TimeZone;
         description = "API REST sobre os papas da Igreja Católica, seus conclaves, encíclicas, concílios e santos canonizados.",
         termsOfService = "https://github.com/enzobariotto/APIPapas",
         contact = @Contact(name = "Enzo Bariotto", url = "https://github.com/enzobariotto"),
-        license = @License(name = "MIT", url = "https://opensource.org/licenses/MIT")))
+        license = @License(name = "Licença de Uso da API de Papas",
+                url = "https://github.com/enzobariotto/APIPapas/blob/main/LICENSE")))
 public class ApiPapasApplication {
 
     public static void main(String[] args) {

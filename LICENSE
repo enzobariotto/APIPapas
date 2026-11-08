@@ -1,0 +1,74 @@
+LICENÇA DE USO DA API DE PAPAS
+
+Copyright (c) 2026 Enzo Bariotto. Todos os direitos não expressamente
+concedidos nesta licença são reservados ao autor.
+
+1. OBJETO
+
+Esta licença se aplica ao código-fonte, à documentação e aos dados de
+exemplo da "API de Papas" (doravante "Software"), uma API REST sobre os
+papas da Igreja Católica, seus conclaves, encíclicas, concílios e santos
+canonizados, desenvolvida como projeto acadêmico no curso de Tecnologia em
+Sistemas para Internet do Senac.
+
+2. PERMISSÕES
+
+É concedida, gratuitamente, a qualquer pessoa que obtenha uma cópia do
+Software, a permissão para:
+
+  a) usar, executar e consultar o Software e a API publicada;
+  b) estudar, copiar e modificar o código-fonte;
+  c) distribuir cópias do Software, original ou modificado;
+
+desde que respeitadas as condições e restrições desta licença.
+
+3. CONDIÇÕES
+
+  a) Atribuição: toda cópia ou trabalho derivado deve manter este aviso de
+     licença e citar o autor original (Enzo Bariotto) e o repositório
+     https://github.com/enzobariotto/APIPapas.
+  b) Identificação de alterações: versões modificadas devem indicar de
+     forma clara que foram alteradas e não podem ser apresentadas como a
+     versão original do autor.
+  c) Mesma licença: trabalhos derivados distribuídos devem ser licenciados
+     sob estes mesmos termos.
+
+4. RESTRIÇÕES
+
+  a) Uso comercial: é proibido vender, sublicenciar ou utilizar o Software
+     com fins comerciais sem autorização prévia e por escrito do autor.
+  b) Integridade acadêmica: é proibido entregar este Software, no todo ou
+     em parte, como trabalho acadêmico de autoria própria.
+  c) Uso indevido: é proibido utilizar o Software ou a API publicada para
+     fins ilícitos, ofensivos à fé ou à dignidade de qualquer pessoa ou
+     grupo, ou para sobrecarregar intencionalmente o serviço.
+
+5. DADOS
+
+Os dados históricos incluídos no Software (datas, nomes, encíclicas,
+conclaves etc.) têm finalidade educacional e de demonstração. Eles não
+constituem fonte oficial da Santa Sé e podem conter imprecisões.
+
+6. AUSÊNCIA DE GARANTIA
+
+O Software é fornecido "no estado em que se encontra", sem garantia de
+qualquer tipo, expressa ou implícita, incluindo, mas não se limitando a,
+garantias de funcionamento, disponibilidade, adequação a uma finalidade
+específica ou exatidão dos dados.
+
+7. LIMITAÇÃO DE RESPONSABILIDADE
+
+Em nenhuma hipótese o autor será responsável por quaisquer danos, perdas
+ou reclamações decorrentes do uso, da impossibilidade de uso ou de
+qualquer outra relação com o Software.
+
+8. ENCERRAMENTO
+
+O descumprimento de qualquer condição desta licença encerra
+automaticamente as permissões concedidas a quem a descumpriu.
+
+9. DISPOSIÇÕES GERAIS
+
+Esta licença é regida pelas leis da República Federativa do Brasil.
+Pedidos de autorização ou dúvidas devem ser encaminhados ao autor pelo
+repositório https://github.com/enzobariotto/APIPapas.
