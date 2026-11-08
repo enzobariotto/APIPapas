@@ -44,9 +44,7 @@ public class ConclaveController {
     @Operation(summary = "Busca um conclave pelo id")
     @GetMapping("/{id}")
     public EntityModel<Conclave> buscar(@PathVariable Long id) {
-        Conclave conclave = repository.findById(id)
-                .orElseThrow(() -> new RecursoNaoEncontradoException("conclave", id));
-        return toModel(conclave);
+        return toModel(buscarConclave(id));
     }
 
     @Operation(summary = "Cadastra um conclave")
@@ -62,8 +60,7 @@ public class ConclaveController {
     @Operation(summary = "Atualiza um conclave")
     @PutMapping("/{id}")
     public EntityModel<Conclave> atualizar(@PathVariable Long id, @Valid @RequestBody Conclave dados) {
-        Conclave conclave = repository.findById(id)
-                .orElseThrow(() -> new RecursoNaoEncontradoException("conclave", id));
+        Conclave conclave = buscarConclave(id);
         conclave.setDataInicio(dados.getDataInicio());
         conclave.setDataFim(dados.getDataFim());
         conclave.setNumeroCardeais(dados.getNumeroCardeais());
@@ -75,10 +72,7 @@ public class ConclaveController {
     @Operation(summary = "Exclui um conclave")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> excluir(@PathVariable Long id) {
-        if (!repository.existsById(id)) {
-            throw new RecursoNaoEncontradoException("conclave", id);
-        }
-        repository.deleteById(id);
+        repository.delete(buscarConclave(id));
         return ResponseEntity.noContent().build();
     }
 
@@ -87,6 +81,11 @@ public class ConclaveController {
     public PagedModel<EntityModel<Conclave>> buscarRapidos(@RequestParam Integer maxEscrutinios,
                                                            @ParameterObject Pageable pageable) {
         return pagedAssembler.toModel(repository.findByNumeroEscrutiniosLessThanEqual(maxEscrutinios, pageable), this::toModel);
+    }
+
+    private Conclave buscarConclave(Long id) {
+        return repository.findById(id)
+                .orElseThrow(() -> new RecursoNaoEncontradoException("conclave", id));
     }
 
     private Papa buscarPapa(Long papaId) {

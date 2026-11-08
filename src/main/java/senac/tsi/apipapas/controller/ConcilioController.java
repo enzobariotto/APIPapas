@@ -47,9 +47,7 @@ public class ConcilioController {
     @Operation(summary = "Busca um concílio pelo id")
     @GetMapping("/{id}")
     public EntityModel<Concilio> buscar(@PathVariable Long id) {
-        Concilio concilio = repository.findById(id)
-                .orElseThrow(() -> new RecursoNaoEncontradoException("concílio", id));
-        return toModel(concilio);
+        return toModel(buscarConcilio(id));
     }
 
     @Operation(summary = "Cadastra um concílio")
@@ -65,8 +63,7 @@ public class ConcilioController {
     @Operation(summary = "Atualiza um concílio")
     @PutMapping("/{id}")
     public EntityModel<Concilio> atualizar(@PathVariable Long id, @Valid @RequestBody Concilio dados) {
-        Concilio concilio = repository.findById(id)
-                .orElseThrow(() -> new RecursoNaoEncontradoException("concílio", id));
+        Concilio concilio = buscarConcilio(id);
         concilio.setNome(dados.getNome());
         concilio.setLocal(dados.getLocal());
         concilio.setDataInicio(dados.getDataInicio());
@@ -78,10 +75,7 @@ public class ConcilioController {
     @Operation(summary = "Exclui um concílio")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> excluir(@PathVariable Long id) {
-        if (!repository.existsById(id)) {
-            throw new RecursoNaoEncontradoException("concílio", id);
-        }
-        repository.deleteById(id);
+        repository.delete(buscarConcilio(id));
         return ResponseEntity.noContent().build();
     }
 
@@ -90,6 +84,11 @@ public class ConcilioController {
     public PagedModel<EntityModel<Concilio>> buscarPorNome(@RequestParam String nome,
                                                            @ParameterObject Pageable pageable) {
         return pagedAssembler.toModel(repository.findByNomeContainingIgnoreCase(nome, pageable), this::toModel);
+    }
+
+    private Concilio buscarConcilio(Long id) {
+        return repository.findById(id)
+                .orElseThrow(() -> new RecursoNaoEncontradoException("concílio", id));
     }
 
     private List<Papa> buscarPapas(List<Papa> papasInformados) {

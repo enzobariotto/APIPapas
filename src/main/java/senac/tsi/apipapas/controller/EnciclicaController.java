@@ -44,9 +44,7 @@ public class EnciclicaController {
     @Operation(summary = "Busca uma encíclica pelo id")
     @GetMapping("/{id}")
     public EntityModel<Enciclica> buscar(@PathVariable Long id) {
-        Enciclica enciclica = repository.findById(id)
-                .orElseThrow(() -> new RecursoNaoEncontradoException("encíclica", id));
-        return toModel(enciclica);
+        return toModel(buscarEnciclica(id));
     }
 
     @Operation(summary = "Cadastra uma encíclica")
@@ -62,8 +60,7 @@ public class EnciclicaController {
     @Operation(summary = "Atualiza uma encíclica")
     @PutMapping("/{id}")
     public EntityModel<Enciclica> atualizar(@PathVariable Long id, @Valid @RequestBody Enciclica dados) {
-        Enciclica enciclica = repository.findById(id)
-                .orElseThrow(() -> new RecursoNaoEncontradoException("encíclica", id));
+        Enciclica enciclica = buscarEnciclica(id);
         enciclica.setTitulo(dados.getTitulo());
         enciclica.setTituloPortugues(dados.getTituloPortugues());
         enciclica.setDataPublicacao(dados.getDataPublicacao());
@@ -74,10 +71,7 @@ public class EnciclicaController {
     @Operation(summary = "Exclui uma encíclica")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> excluir(@PathVariable Long id) {
-        if (!repository.existsById(id)) {
-            throw new RecursoNaoEncontradoException("encíclica", id);
-        }
-        repository.deleteById(id);
+        repository.delete(buscarEnciclica(id));
         return ResponseEntity.noContent().build();
     }
 
@@ -86,6 +80,11 @@ public class EnciclicaController {
     public PagedModel<EntityModel<Enciclica>> buscarPorPapa(@PathVariable Long papaId,
                                                             @ParameterObject Pageable pageable) {
         return pagedAssembler.toModel(repository.findByPapaId(papaId, pageable), this::toModel);
+    }
+
+    private Enciclica buscarEnciclica(Long id) {
+        return repository.findById(id)
+                .orElseThrow(() -> new RecursoNaoEncontradoException("encíclica", id));
     }
 
     private Papa buscarPapa(Long papaId) {

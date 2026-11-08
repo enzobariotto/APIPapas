@@ -40,9 +40,7 @@ public class PapaController {
     @Operation(summary = "Busca um papa pelo id")
     @GetMapping("/{id}")
     public EntityModel<Papa> buscar(@PathVariable Long id) {
-        Papa papa = repository.findById(id)
-                .orElseThrow(() -> new RecursoNaoEncontradoException("papa", id));
-        return toModel(papa);
+        return toModel(buscarPapa(id));
     }
 
     @Operation(summary = "Cadastra um papa")
@@ -57,8 +55,7 @@ public class PapaController {
     @Operation(summary = "Atualiza um papa")
     @PutMapping("/{id}")
     public EntityModel<Papa> atualizar(@PathVariable Long id, @Valid @RequestBody Papa dados) {
-        Papa papa = repository.findById(id)
-                .orElseThrow(() -> new RecursoNaoEncontradoException("papa", id));
+        Papa papa = buscarPapa(id);
         papa.setNomePapal(dados.getNomePapal());
         papa.setNomeBatismo(dados.getNomeBatismo());
         papa.setNumeroOrdem(dados.getNumeroOrdem());
@@ -72,10 +69,7 @@ public class PapaController {
     @Operation(summary = "Exclui um papa")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> excluir(@PathVariable Long id) {
-        if (!repository.existsById(id)) {
-            throw new RecursoNaoEncontradoException("papa", id);
-        }
-        repository.deleteById(id);
+        repository.delete(buscarPapa(id));
         return ResponseEntity.noContent().build();
     }
 
@@ -84,6 +78,11 @@ public class PapaController {
     public PagedModel<EntityModel<Papa>> buscarPorSituacao(@PathVariable SituacaoPontificado situacao,
                                                            @ParameterObject Pageable pageable) {
         return pagedAssembler.toModel(repository.findBySituacao(situacao, pageable), this::toModel);
+    }
+
+    private Papa buscarPapa(Long id) {
+        return repository.findById(id)
+                .orElseThrow(() -> new RecursoNaoEncontradoException("papa", id));
     }
 
     private EntityModel<Papa> toModel(Papa papa) {

@@ -44,9 +44,7 @@ public class SantoController {
     @Operation(summary = "Busca um santo pelo id")
     @GetMapping("/{id}")
     public EntityModel<Santo> buscar(@PathVariable Long id) {
-        Santo santo = repository.findById(id)
-                .orElseThrow(() -> new RecursoNaoEncontradoException("santo", id));
-        return toModel(santo);
+        return toModel(buscarSanto(id));
     }
 
     @Operation(summary = "Cadastra um santo")
@@ -62,8 +60,7 @@ public class SantoController {
     @Operation(summary = "Atualiza um santo")
     @PutMapping("/{id}")
     public EntityModel<Santo> atualizar(@PathVariable Long id, @Valid @RequestBody Santo dados) {
-        Santo santo = repository.findById(id)
-                .orElseThrow(() -> new RecursoNaoEncontradoException("santo", id));
+        Santo santo = buscarSanto(id);
         santo.setNome(dados.getNome());
         santo.setPaisOrigem(dados.getPaisOrigem());
         santo.setDataCanonizacao(dados.getDataCanonizacao());
@@ -74,10 +71,7 @@ public class SantoController {
     @Operation(summary = "Exclui um santo")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> excluir(@PathVariable Long id) {
-        if (!repository.existsById(id)) {
-            throw new RecursoNaoEncontradoException("santo", id);
-        }
-        repository.deleteById(id);
+        repository.delete(buscarSanto(id));
         return ResponseEntity.noContent().build();
     }
 
@@ -86,6 +80,11 @@ public class SantoController {
     public PagedModel<EntityModel<Santo>> buscarPorPais(@PathVariable String pais,
                                                         @ParameterObject Pageable pageable) {
         return pagedAssembler.toModel(repository.findByPaisOrigemIgnoreCase(pais, pageable), this::toModel);
+    }
+
+    private Santo buscarSanto(Long id) {
+        return repository.findById(id)
+                .orElseThrow(() -> new RecursoNaoEncontradoException("santo", id));
     }
 
     private Papa buscarPapa(Long papaId) {
