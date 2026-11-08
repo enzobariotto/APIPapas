@@ -6,6 +6,9 @@ import senac.tsi.apipapas.model.Papa;
 import senac.tsi.apipapas.repository.EnciclicaRepository;
 import senac.tsi.apipapas.repository.PapaRepository;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springdoc.core.annotations.ParameterObject;
@@ -36,18 +39,30 @@ public class EnciclicaController {
     }
 
     @Operation(summary = "Lista as encíclicas")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Lista paginada de encíclicas")
+    })
     @GetMapping
     public PagedModel<EntityModel<Enciclica>> listar(@ParameterObject Pageable pageable) {
         return pagedAssembler.toModel(repository.findAll(pageable), this::toModel);
     }
 
     @Operation(summary = "Busca uma encíclica pelo id")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Encíclica encontrada"),
+            @ApiResponse(responseCode = "404", description = "Encíclica não encontrada", content = @Content)
+    })
     @GetMapping("/{id}")
     public EntityModel<Enciclica> buscar(@PathVariable Long id) {
         return toModel(buscarEnciclica(id));
     }
 
     @Operation(summary = "Cadastra uma encíclica")
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "Encíclica cadastrada"),
+            @ApiResponse(responseCode = "400", description = "Dados inválidos", content = @Content),
+            @ApiResponse(responseCode = "404", description = "Papa não encontrado", content = @Content)
+    })
     @PostMapping
     public ResponseEntity<EntityModel<Enciclica>> criar(@Valid @RequestBody Enciclica novaEnciclica) {
         novaEnciclica.setId(null);
@@ -58,6 +73,11 @@ public class EnciclicaController {
     }
 
     @Operation(summary = "Atualiza uma encíclica")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Encíclica atualizada"),
+            @ApiResponse(responseCode = "400", description = "Dados inválidos", content = @Content),
+            @ApiResponse(responseCode = "404", description = "Encíclica ou papa não encontrado", content = @Content)
+    })
     @PutMapping("/{id}")
     public EntityModel<Enciclica> atualizar(@PathVariable Long id, @Valid @RequestBody Enciclica dados) {
         Enciclica enciclica = buscarEnciclica(id);
@@ -69,6 +89,10 @@ public class EnciclicaController {
     }
 
     @Operation(summary = "Exclui uma encíclica")
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "Encíclica excluída", content = @Content),
+            @ApiResponse(responseCode = "404", description = "Encíclica não encontrada", content = @Content)
+    })
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> excluir(@PathVariable Long id) {
         repository.delete(buscarEnciclica(id));
@@ -76,6 +100,9 @@ public class EnciclicaController {
     }
 
     @Operation(summary = "Lista as encíclicas de um papa")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Lista paginada de encíclicas do papa")
+    })
     @GetMapping("/papa/{papaId}")
     public PagedModel<EntityModel<Enciclica>> buscarPorPapa(@PathVariable Long papaId,
                                                             @ParameterObject Pageable pageable) {
