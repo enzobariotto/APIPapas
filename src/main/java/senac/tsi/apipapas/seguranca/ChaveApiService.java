@@ -36,6 +36,14 @@ public class ChaveApiService {
         return chave;
     }
 
+    /** Apenas identifica a chave (usado pelo rate limiting), sem registrar uso. */
+    public Optional<ChaveApi> identificar(String valor) {
+        if (valor == null || valor.isBlank()) {
+            return Optional.empty();
+        }
+        return repository.findByHashAndAtivaTrue(GeradorChave.sha256(valor));
+    }
+
     public record ChaveGerada(ChaveApi chave, String valor) {
     }
 }

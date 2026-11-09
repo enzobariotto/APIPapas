@@ -20,7 +20,7 @@ import java.util.Set;
  * Os GETs dos recursos continuam públicos.
  */
 @Component
-@Order(1)
+@Order(2)
 public class ApiKeyFilter extends OncePerRequestFilter {
 
     public static final String HEADER = "X-API-Key";

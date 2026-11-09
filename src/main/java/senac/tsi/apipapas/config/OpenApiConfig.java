@@ -10,6 +10,9 @@ import io.swagger.v3.oas.models.responses.ApiResponse;
 import io.swagger.v3.oas.models.responses.ApiResponses;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import org.springdoc.core.customizers.OperationCustomizer;
+import org.springdoc.core.models.GroupedOpenApi;
+import org.springframework.core.annotation.AnnotatedElementUtils;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -18,6 +21,8 @@ import org.springframework.web.bind.annotation.PutMapping;
 import senac.tsi.apipapas.controller.ChaveApiController;
 import senac.tsi.apipapas.idempotencia.IdempotenciaFilter;
 import senac.tsi.apipapas.seguranca.ApiKeyFilter;
+
+import java.lang.reflect.Method;
 
 /**
  * Documenta no Swagger a autenticação por chave de API e a idempotência,
@@ -29,9 +34,51 @@ import senac.tsi.apipapas.seguranca.ApiKeyFilter;
         description = "Chave de API gerada em /chaves-api (ou a chave de admin). Exigida em POST, PUT e DELETE.")
 class OpenApiConfig {
 
+    /*
+     * Um grupo de documentação por versão da API (seletor "Select a definition" no Swagger UI).
+     * O OpenAPI não permite duas operações no mesmo caminho e método, então cada grupo mostra os endpoints
+     * sem versão declarada mais os da sua versão.
+     */
+    @Bean
+    GroupedOpenApi versao1() {
+        return grupo("v1", "1");
+    }
+
+    @Bean
+    GroupedOpenApi versao2() {
+        return grupo("v2", "2");
+    }
+
+    private GroupedOpenApi grupo(String nome, String versao) {
+        return GroupedOpenApi.builder()
+                .group(nome)
+                .displayName("Versão " + versao + " (X-API-Version: " + versao + ")")
+                .addOpenApiMethodFilter(metodo -> atendeVersao(metodo, versao))
+                .addOperationCustomizer(autenticacaoEIdempotencia())
+                .addOperationCustomizer((operation, handlerMethod) -> {
+                    // Header X-API-Version já preenchido com a versão do grupo, para o "Try it out" chamar a versão certa.
+                    if (operation.getParameters() != null) {
+                        operation.getParameters().stream()
+                                .filter(p -> "header".equals(p.getIn()) && "X-API-Version".equals(p.getName()))
+                                .forEach(p -> {
+                                    p.setSchema(new StringSchema()._default(versao).addEnumItem(versao));
+                                    p.setDescription("Versão da API. Sem o header, vale a versão 1.");
+                                });
+                    }
+                    return operation;
+                })
+                .build();
+    }
+
+    private static boolean atendeVersao(Method metodo, String versao) {
+        RequestMapping mapping = AnnotatedElementUtils.findMergedAnnotation(metodo, RequestMapping.class);
+        return mapping == null || mapping.version().isEmpty() || mapping.version().equals(versao);
+    }
+
     @Bean
     OperationCustomizer autenticacaoEIdempotencia() {
         return (operation, handlerMethod) -> {
+            adicionar(operation, "429", "Limite de requisições excedido. Veja o header Retry-After");
             if (handlerMethod.getBeanType().equals(ChaveApiController.class)) {
                 return operation;
             }

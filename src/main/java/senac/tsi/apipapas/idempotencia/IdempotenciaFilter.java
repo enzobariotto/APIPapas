@@ -35,7 +35,7 @@ import java.util.Optional;
  * Roda depois do ApiKeyFilter, para que cada cliente tenha o seu próprio espaço de chaves.
  */
 @Component
-@Order(2)
+@Order(3)
 public class IdempotenciaFilter extends OncePerRequestFilter {
 
     public static final String HEADER = "X-Idempotency-Key";

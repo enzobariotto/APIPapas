@@ -2,6 +2,7 @@ package senac.tsi.apipapas.controller;
 
 import senac.tsi.apipapas.exception.RecursoNaoEncontradoException;
 import senac.tsi.apipapas.model.Papa;
+import senac.tsi.apipapas.model.PapaV2;
 import senac.tsi.apipapas.model.SituacaoPontificado;
 import senac.tsi.apipapas.repository.PapaRepository;
 import io.swagger.v3.oas.annotations.Operation;
@@ -34,23 +35,46 @@ public class PapaController {
         this.pagedAssembler = pagedAssembler;
     }
 
-    @Operation(summary = "Lista os papas")
+    @Operation(summary = "Lista os papas (versão 1)",
+            description = "Versão padrão, usada quando o header X-API-Version não é enviado ou vale 1.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Lista paginada de papas")
     })
-    @GetMapping
+    @GetMapping(version = "1")
     public PagedModel<EntityModel<Papa>> listar(@ParameterObject Pageable pageable) {
         return pagedAssembler.toModel(repository.findAll(pageable), this::toModel);
     }
 
-    @Operation(summary = "Busca um papa pelo id")
+    @Operation(summary = "Lista os papas (versão 2)",
+            description = "Enviar X-API-Version: 2. Agrupa nome e pontificado e inclui duracaoDias e emExercicio.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Lista paginada de papas no formato da versão 2")
+    })
+    @GetMapping(version = "2")
+    public PagedModel<EntityModel<PapaV2>> listarV2(@ParameterObject Pageable pageable) {
+        return pagedAssembler.toModel(repository.findAll(pageable), this::toModelV2);
+    }
+
+    @Operation(summary = "Busca um papa pelo id (versão 1)",
+            description = "Versão padrão, usada quando o header X-API-Version não é enviado ou vale 1.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Papa encontrado"),
             @ApiResponse(responseCode = "404", description = "Papa não encontrado", content = @Content)
     })
-    @GetMapping("/{id}")
+    @GetMapping(path = "/{id}", version = "1")
     public EntityModel<Papa> buscar(@PathVariable Long id) {
         return toModel(buscarPapa(id));
+    }
+
+    @Operation(summary = "Busca um papa pelo id (versão 2)",
+            description = "Enviar X-API-Version: 2. Agrupa nome e pontificado e inclui duracaoDias e emExercicio.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Papa encontrado, no formato da versão 2"),
+            @ApiResponse(responseCode = "404", description = "Papa não encontrado", content = @Content)
+    })
+    @GetMapping(path = "/{id}", version = "2")
+    public EntityModel<PapaV2> buscarV2(@PathVariable Long id) {
+        return toModelV2(buscarPapa(id));
     }
 
     @Operation(summary = "Cadastra um papa")
@@ -111,6 +135,15 @@ public class PapaController {
     private Papa buscarPapa(Long id) {
         return repository.findById(id)
                 .orElseThrow(() -> new RecursoNaoEncontradoException("papa", id));
+    }
+
+    private EntityModel<PapaV2> toModelV2(Papa papa) {
+        return EntityModel.of(PapaV2.de(papa),
+                linkTo(methodOn(PapaController.class).buscar(papa.getId())).withSelfRel(),
+                linkTo(methodOn(PapaController.class).atualizar(papa.getId(), null)).withRel("update"),
+                linkTo(methodOn(PapaController.class).excluir(papa.getId())).withRel("delete"),
+                linkTo(PapaController.class).withRel("papas"),
+                linkTo(EnciclicaController.class).slash("papa").slash(papa.getId()).withRel("enciclicas"));
     }
 
     private EntityModel<Papa> toModel(Papa papa) {

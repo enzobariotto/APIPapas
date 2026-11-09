@@ -66,3 +66,42 @@ Os `POST` de cadastro exigem o header `X-Idempotency-Key` com um valor único po
 | Mesma chave enquanto a primeira ainda está em processamento | `409` |
 
 As respostas de erro não são guardadas: dá para corrigir os dados e tentar de novo com a mesma chave. Cada chave de API tem o seu próprio espaço de chaves de idempotência.
+
+## Rate limiting
+
+Cada cliente tem um limite de requisições por janela de tempo. O cliente é identificado pela chave de API (se o `X-API-Key` for válido) ou, sem chave, pelo IP.
+
+| Cliente | Limite padrão |
+|---|---|
+| Sem chave (por IP) | 60 requisições por minuto |
+| Com chave de API | 120 requisições por minuto |
+
+- Toda resposta traz `X-RateLimit-Limit` (limite), `X-RateLimit-Remaining` (quanto ainda resta) e `X-RateLimit-Reset` (segundos até a janela reiniciar).
+- Ao passar do limite a API responde **`429 Too Many Requests`** com o header **`Retry-After`** (segundos para tentar de novo).
+- Swagger, `/v3/api-docs` e console do H2 ficam fora do limite.
+- Configurável pelas variáveis `RATE_LIMIT_ANONIMO`, `RATE_LIMIT_COM_CHAVE` e `RATE_LIMIT_JANELA` (ex.: `60s`).
+
+## CORS
+
+| Configuração | Valor |
+|---|---|
+| Origens permitidas | `http://localhost:3000`, `http://localhost:5173`, `http://localhost:4200` (variável `CORS_ORIGENS`, separadas por vírgula) |
+| Métodos | `GET`, `POST`, `PUT`, `DELETE`, `OPTIONS` |
+| Headers aceitos | `Content-Type`, `Accept`, `X-API-Key`, `X-Idempotency-Key`, `X-API-Version` |
+| Headers expostos ao navegador | `Location`, `Retry-After`, `X-API-Version`, `Idempotency-Replayed`, `X-RateLimit-*` |
+| Credenciais (cookies) | Não (a autenticação é pelo header `X-API-Key`) |
+| Cache do preflight | 1 hora |
+
+Requisições de outras origens recebem `403`. O próprio Swagger da API é mesma origem e não é afetado.
+
+## Versionamento (`X-API-Version`)
+
+A versão é escolhida pelo header `X-API-Version`. Sem o header, vale a **versão 1**; versão não suportada retorna `400`. A resposta informa a versão usada no header `X-API-Version`.
+
+Os endpoints `GET /papas` e `GET /papas/{id}` têm duas versões:
+
+| Versão 1 | Versão 2 |
+|---|---|
+| `{"id": 6, "nomePapal": "Francisco", "nomeBatismo": "Jorge Mario Bergoglio", "numeroOrdem": 266, "paisNascimento": "Argentina", "inicioPontificado": "2013-03-13", "fimPontificado": "2025-04-21", "situacao": "FALECIMENTO"}` | `{"id": 6, "nome": {"papal": "Francisco", "batismo": "Jorge Mario Bergoglio"}, "numeroOrdem": 266, "paisNascimento": "Argentina", "pontificado": {"inicio": "2013-03-13", "fim": "2025-04-21", "situacao": "FALECIMENTO", "duracaoDias": 4422, "emExercicio": false}}` |
+
+Os demais endpoints atendem às duas versões. No Swagger, escolha a versão em **Select a definition** (canto superior direito).
