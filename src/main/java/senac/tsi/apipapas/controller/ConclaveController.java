@@ -6,11 +6,14 @@ import senac.tsi.apipapas.model.Papa;
 import senac.tsi.apipapas.repository.ConclaveRepository;
 import senac.tsi.apipapas.repository.PapaRepository;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
+import senac.tsi.apipapas.exception.DadosInvalidosException;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PagedResourcesAssembler;
@@ -53,7 +56,7 @@ public class ConclaveController {
             @ApiResponse(responseCode = "404", description = "Conclave não encontrado", content = @Content)
     })
     @GetMapping("/{id}")
-    public EntityModel<Conclave> buscar(@PathVariable Long id) {
+    public EntityModel<Conclave> buscar(@Parameter(description = "Id do(a) conclave", example = "1") @PathVariable Long id) {
         return toModel(buscarConclave(id));
     }
 
@@ -81,7 +84,7 @@ public class ConclaveController {
             @ApiResponse(responseCode = "409", description = "O papa informado já possui um conclave", content = @Content)
     })
     @PutMapping("/{id}")
-    public EntityModel<Conclave> atualizar(@PathVariable Long id, @Valid @RequestBody Conclave dados) {
+    public EntityModel<Conclave> atualizar(@Parameter(description = "Id do(a) conclave", example = "1") @PathVariable Long id, @Valid @RequestBody Conclave dados) {
         Conclave conclave = buscarConclave(id);
         conclave.setDataInicio(dados.getDataInicio());
         conclave.setDataFim(dados.getDataFim());
@@ -97,7 +100,7 @@ public class ConclaveController {
             @ApiResponse(responseCode = "404", description = "Conclave não encontrado", content = @Content)
     })
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> excluir(@PathVariable Long id) {
+    public ResponseEntity<Void> excluir(@Parameter(description = "Id do(a) conclave", example = "1") @PathVariable Long id) {
         repository.delete(buscarConclave(id));
         return ResponseEntity.noContent().build();
     }
@@ -108,7 +111,8 @@ public class ConclaveController {
             @ApiResponse(responseCode = "400", description = "Parâmetro maxEscrutinios ausente ou inválido", content = @Content)
     })
     @GetMapping("/rapidos")
-    public PagedModel<EntityModel<Conclave>> buscarRapidos(@RequestParam Integer maxEscrutinios,
+    public PagedModel<EntityModel<Conclave>> buscarRapidos(@Parameter(description = "Número máximo de escrutínios (mínimo 1)", example = "4")
+                                                           @RequestParam @Min(value = 1, message = "Deve ser maior ou igual a 1") Integer maxEscrutinios,
                                                            @ParameterObject Pageable pageable) {
         return pagedAssembler.toModel(repository.findByNumeroEscrutiniosLessThanEqual(maxEscrutinios, pageable), this::toModel);
     }
@@ -119,6 +123,9 @@ public class ConclaveController {
     }
 
     private Papa buscarPapa(Long papaId) {
+        if (papaId == null) {
+            throw new DadosInvalidosException("papa.id", "Informe o id do papa eleito, ex.: {\"id\": 3}");
+        }
         return papaRepository.findById(papaId)
                 .orElseThrow(() -> new RecursoNaoEncontradoException("papa", papaId));
     }

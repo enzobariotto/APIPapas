@@ -6,6 +6,7 @@ import senac.tsi.apipapas.model.PapaV2;
 import senac.tsi.apipapas.model.SituacaoPontificado;
 import senac.tsi.apipapas.repository.PapaRepository;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -62,7 +63,7 @@ public class PapaController {
             @ApiResponse(responseCode = "404", description = "Papa não encontrado", content = @Content)
     })
     @GetMapping(path = "/{id}", version = "1")
-    public EntityModel<Papa> buscar(@PathVariable Long id) {
+    public EntityModel<Papa> buscar(@Parameter(description = "Id do(a) papa", example = "6") @PathVariable Long id) {
         return toModel(buscarPapa(id));
     }
 
@@ -73,7 +74,7 @@ public class PapaController {
             @ApiResponse(responseCode = "404", description = "Papa não encontrado", content = @Content)
     })
     @GetMapping(path = "/{id}", version = "2")
-    public EntityModel<PapaV2> buscarV2(@PathVariable Long id) {
+    public EntityModel<PapaV2> buscarV2(@Parameter(description = "Id do(a) papa", example = "6") @PathVariable Long id) {
         return toModelV2(buscarPapa(id));
     }
 
@@ -97,7 +98,7 @@ public class PapaController {
             @ApiResponse(responseCode = "404", description = "Papa não encontrado", content = @Content)
     })
     @PutMapping("/{id}")
-    public EntityModel<Papa> atualizar(@PathVariable Long id, @Valid @RequestBody Papa dados) {
+    public EntityModel<Papa> atualizar(@Parameter(description = "Id do(a) papa", example = "6") @PathVariable Long id, @Valid @RequestBody Papa dados) {
         Papa papa = buscarPapa(id);
         papa.setNomePapal(dados.getNomePapal());
         papa.setNomeBatismo(dados.getNomeBatismo());
@@ -116,7 +117,7 @@ public class PapaController {
             @ApiResponse(responseCode = "409", description = "Papa possui registros vinculados (conclave, encíclicas, concílios ou santos)", content = @Content)
     })
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> excluir(@PathVariable Long id) {
+    public ResponseEntity<Void> excluir(@Parameter(description = "Id do(a) papa", example = "6") @PathVariable Long id) {
         repository.delete(buscarPapa(id));
         return ResponseEntity.noContent().build();
     }
@@ -127,7 +128,7 @@ public class PapaController {
             @ApiResponse(responseCode = "400", description = "Situação inválida", content = @Content)
     })
     @GetMapping("/situacao/{situacao}")
-    public PagedModel<EntityModel<Papa>> buscarPorSituacao(@PathVariable SituacaoPontificado situacao,
+    public PagedModel<EntityModel<Papa>> buscarPorSituacao(@Parameter(description = "Situação do pontificado") @PathVariable SituacaoPontificado situacao,
                                                            @ParameterObject Pageable pageable) {
         return pagedAssembler.toModel(repository.findBySituacao(situacao, pageable), this::toModel);
     }

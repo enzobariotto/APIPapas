@@ -15,10 +15,12 @@ public class Santo {
     private Long id;
 
     @NotBlank(message = "O nome é obrigatório")
+    @Size(max = 150, message = "O nome deve ter no máximo 150 caracteres")
     @Schema(example = "Santa Dulce dos Pobres")
     private String nome;
 
     @NotBlank(message = "O país de origem é obrigatório")
+    @Size(max = 60, message = "O país de origem deve ter no máximo 60 caracteres")
     @Schema(example = "Brasil")
     private String paisOrigem;
 

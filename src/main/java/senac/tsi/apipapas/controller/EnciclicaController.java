@@ -6,11 +6,13 @@ import senac.tsi.apipapas.model.Papa;
 import senac.tsi.apipapas.repository.EnciclicaRepository;
 import senac.tsi.apipapas.repository.PapaRepository;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import senac.tsi.apipapas.exception.DadosInvalidosException;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PagedResourcesAssembler;
@@ -53,7 +55,7 @@ public class EnciclicaController {
             @ApiResponse(responseCode = "404", description = "Encíclica não encontrada", content = @Content)
     })
     @GetMapping("/{id}")
-    public EntityModel<Enciclica> buscar(@PathVariable Long id) {
+    public EntityModel<Enciclica> buscar(@Parameter(description = "Id do(a) encíclica", example = "1") @PathVariable Long id) {
         return toModel(buscarEnciclica(id));
     }
 
@@ -79,7 +81,7 @@ public class EnciclicaController {
             @ApiResponse(responseCode = "404", description = "Encíclica ou papa não encontrado", content = @Content)
     })
     @PutMapping("/{id}")
-    public EntityModel<Enciclica> atualizar(@PathVariable Long id, @Valid @RequestBody Enciclica dados) {
+    public EntityModel<Enciclica> atualizar(@Parameter(description = "Id do(a) encíclica", example = "1") @PathVariable Long id, @Valid @RequestBody Enciclica dados) {
         Enciclica enciclica = buscarEnciclica(id);
         enciclica.setTitulo(dados.getTitulo());
         enciclica.setTituloPortugues(dados.getTituloPortugues());
@@ -94,7 +96,7 @@ public class EnciclicaController {
             @ApiResponse(responseCode = "404", description = "Encíclica não encontrada", content = @Content)
     })
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> excluir(@PathVariable Long id) {
+    public ResponseEntity<Void> excluir(@Parameter(description = "Id do(a) encíclica", example = "1") @PathVariable Long id) {
         repository.delete(buscarEnciclica(id));
         return ResponseEntity.noContent().build();
     }
@@ -104,7 +106,7 @@ public class EnciclicaController {
             @ApiResponse(responseCode = "200", description = "Lista paginada de encíclicas do papa")
     })
     @GetMapping("/papa/{papaId}")
-    public PagedModel<EntityModel<Enciclica>> buscarPorPapa(@PathVariable Long papaId,
+    public PagedModel<EntityModel<Enciclica>> buscarPorPapa(@Parameter(description = "Id do papa", example = "6") @PathVariable Long papaId,
                                                             @ParameterObject Pageable pageable) {
         return pagedAssembler.toModel(repository.findByPapaId(papaId, pageable), this::toModel);
     }
@@ -115,6 +117,9 @@ public class EnciclicaController {
     }
 
     private Papa buscarPapa(Long papaId) {
+        if (papaId == null) {
+            throw new DadosInvalidosException("papa.id", "Informe o id do papa, ex.: {\"id\": 6}");
+        }
         return papaRepository.findById(papaId)
                 .orElseThrow(() -> new RecursoNaoEncontradoException("papa", papaId));
     }

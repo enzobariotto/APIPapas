@@ -3,12 +3,15 @@ package senac.tsi.apipapas.model;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
+import senac.tsi.apipapas.validacao.PeriodoValido;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
 @Entity
+@PeriodoValido(inicio = "dataInicio", fim = "dataFim",
+        message = "A data de encerramento não pode ser anterior à data de início")
 public class Concilio {
 
     @Id
@@ -17,10 +20,12 @@ public class Concilio {
     private Long id;
 
     @NotBlank(message = "O nome é obrigatório")
+    @Size(max = 150, message = "O nome deve ter no máximo 150 caracteres")
     @Schema(example = "Concílio Vaticano II")
     private String nome;
 
     @NotBlank(message = "O local é obrigatório")
+    @Size(max = 150, message = "O local deve ter no máximo 150 caracteres")
     @Schema(example = "Basílica de São Pedro, Vaticano")
     private String local;
 
@@ -40,7 +45,7 @@ public class Concilio {
             inverseJoinColumns = @JoinColumn(name = "papa_id"))
     @NotEmpty(message = "Informe pelo menos um papa")
     @Schema(example = "[{\"id\": 2}, {\"id\": 3}]")
-    private List<Papa> papas = new ArrayList<>();
+    private List<@NotNull(message = "Informe cada papa como objeto com id, ex.: {\"id\": 2}") Papa> papas = new ArrayList<>();
 
     public Concilio() {
     }

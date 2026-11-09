@@ -6,11 +6,14 @@ import senac.tsi.apipapas.model.Papa;
 import senac.tsi.apipapas.repository.ConcilioRepository;
 import senac.tsi.apipapas.repository.PapaRepository;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import senac.tsi.apipapas.exception.DadosInvalidosException;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PagedResourcesAssembler;
@@ -56,7 +59,7 @@ public class ConcilioController {
             @ApiResponse(responseCode = "404", description = "Concílio não encontrado", content = @Content)
     })
     @GetMapping("/{id}")
-    public EntityModel<Concilio> buscar(@PathVariable Long id) {
+    public EntityModel<Concilio> buscar(@Parameter(description = "Id do(a) concílio", example = "1") @PathVariable Long id) {
         return toModel(buscarConcilio(id));
     }
 
@@ -82,7 +85,7 @@ public class ConcilioController {
             @ApiResponse(responseCode = "404", description = "Concílio ou papa não encontrado", content = @Content)
     })
     @PutMapping("/{id}")
-    public EntityModel<Concilio> atualizar(@PathVariable Long id, @Valid @RequestBody Concilio dados) {
+    public EntityModel<Concilio> atualizar(@Parameter(description = "Id do(a) concílio", example = "1") @PathVariable Long id, @Valid @RequestBody Concilio dados) {
         Concilio concilio = buscarConcilio(id);
         concilio.setNome(dados.getNome());
         concilio.setLocal(dados.getLocal());
@@ -98,7 +101,7 @@ public class ConcilioController {
             @ApiResponse(responseCode = "404", description = "Concílio não encontrado", content = @Content)
     })
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> excluir(@PathVariable Long id) {
+    public ResponseEntity<Void> excluir(@Parameter(description = "Id do(a) concílio", example = "1") @PathVariable Long id) {
         repository.delete(buscarConcilio(id));
         return ResponseEntity.noContent().build();
     }
@@ -109,7 +112,8 @@ public class ConcilioController {
             @ApiResponse(responseCode = "400", description = "Parâmetro nome ausente", content = @Content)
     })
     @GetMapping("/busca")
-    public PagedModel<EntityModel<Concilio>> buscarPorNome(@RequestParam String nome,
+    public PagedModel<EntityModel<Concilio>> buscarPorNome(@Parameter(description = "Trecho do nome (sem diferenciar maiúsculas)", example = "vaticano")
+                                                           @RequestParam @NotBlank(message = "Informe um texto para a busca") String nome,
                                                            @ParameterObject Pageable pageable) {
         return pagedAssembler.toModel(repository.findByNomeContainingIgnoreCase(nome, pageable), this::toModel);
     }
@@ -121,7 +125,11 @@ public class ConcilioController {
 
     private List<Papa> buscarPapas(List<Papa> papasInformados) {
         List<Papa> papas = new ArrayList<>();
-        for (Papa papa : papasInformados) {
+        for (int i = 0; i < papasInformados.size(); i++) {
+            Papa papa = papasInformados.get(i);
+            if (papa.getId() == null) {
+                throw new DadosInvalidosException("papas[" + i + "].id", "Informe o id do papa, ex.: {\"id\": 2}");
+            }
             papas.add(papaRepository.findById(papa.getId())
                     .orElseThrow(() -> new RecursoNaoEncontradoException("papa", papa.getId())));
         }

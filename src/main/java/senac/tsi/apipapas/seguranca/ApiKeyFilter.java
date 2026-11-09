@@ -1,5 +1,8 @@
 package senac.tsi.apipapas.seguranca;
 
+import org.springframework.http.HttpStatus;
+import senac.tsi.apipapas.exception.ErroApi;
+
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -47,17 +50,17 @@ public class ApiKeyFilter extends OncePerRequestFilter {
 
         if (pertence(caminho, CHAVES_API)) {
             if (chave == null || chave.isBlank()) {
-                erro(response, HttpServletResponse.SC_UNAUTHORIZED, "Informe a chave de admin no header " + HEADER + ".");
+                erro(request, response, HttpServletResponse.SC_UNAUTHORIZED, "Informe a chave de admin no header " + HEADER + ".");
                 return;
             }
             if (!chaveAdmin.confere(chave)) {
-                erro(response, HttpServletResponse.SC_FORBIDDEN, "Somente o administrador pode gerenciar chaves de API.");
+                erro(request, response, HttpServletResponse.SC_FORBIDDEN, "Somente o administrador pode gerenciar chaves de API.");
                 return;
             }
             request.setAttribute(ATRIBUTO_CLIENTE, "admin");
         } else if (METODOS_ESCRITA.contains(request.getMethod()) && ehRecurso(caminho)) {
             if (chave == null || chave.isBlank()) {
-                erro(response, HttpServletResponse.SC_UNAUTHORIZED, "Informe uma chave de API válida no header " + HEADER + ".");
+                erro(request, response, HttpServletResponse.SC_UNAUTHORIZED, "Informe uma chave de API válida no header " + HEADER + ".");
                 return;
             }
             if (chaveAdmin.confere(chave)) {
@@ -65,7 +68,7 @@ public class ApiKeyFilter extends OncePerRequestFilter {
             } else {
                 var chaveApi = chaveApiService.validar(chave);
                 if (chaveApi.isEmpty()) {
-                    erro(response, HttpServletResponse.SC_UNAUTHORIZED, "Chave de API inválida ou revogada.");
+                    erro(request, response, HttpServletResponse.SC_UNAUTHORIZED, "Chave de API inválida ou revogada.");
                     return;
                 }
                 request.setAttribute(ATRIBUTO_CLIENTE, "chave-" + chaveApi.get().getId());
@@ -86,9 +89,8 @@ public class ApiKeyFilter extends OncePerRequestFilter {
         return caminho.equals(base) || caminho.startsWith(base + "/");
     }
 
-    public static void erro(HttpServletResponse response, int status, String mensagem) throws IOException {
-        response.setStatus(status);
-        response.setContentType("text/plain;charset=UTF-8");
-        response.getOutputStream().write(mensagem.getBytes(StandardCharsets.UTF_8));
+    public static void erro(HttpServletRequest request, HttpServletResponse response, int status, String mensagem)
+            throws IOException {
+        ErroApi.escrever(request, response, HttpStatus.valueOf(status), mensagem);
     }
 }

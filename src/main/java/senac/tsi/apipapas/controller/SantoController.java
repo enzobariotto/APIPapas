@@ -6,11 +6,13 @@ import senac.tsi.apipapas.model.Santo;
 import senac.tsi.apipapas.repository.PapaRepository;
 import senac.tsi.apipapas.repository.SantoRepository;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import senac.tsi.apipapas.exception.DadosInvalidosException;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PagedResourcesAssembler;
@@ -53,7 +55,7 @@ public class SantoController {
             @ApiResponse(responseCode = "404", description = "Santo não encontrado", content = @Content)
     })
     @GetMapping("/{id}")
-    public EntityModel<Santo> buscar(@PathVariable Long id) {
+    public EntityModel<Santo> buscar(@Parameter(description = "Id do(a) santo", example = "1") @PathVariable Long id) {
         return toModel(buscarSanto(id));
     }
 
@@ -79,7 +81,7 @@ public class SantoController {
             @ApiResponse(responseCode = "404", description = "Santo ou papa não encontrado", content = @Content)
     })
     @PutMapping("/{id}")
-    public EntityModel<Santo> atualizar(@PathVariable Long id, @Valid @RequestBody Santo dados) {
+    public EntityModel<Santo> atualizar(@Parameter(description = "Id do(a) santo", example = "1") @PathVariable Long id, @Valid @RequestBody Santo dados) {
         Santo santo = buscarSanto(id);
         santo.setNome(dados.getNome());
         santo.setPaisOrigem(dados.getPaisOrigem());
@@ -94,7 +96,7 @@ public class SantoController {
             @ApiResponse(responseCode = "404", description = "Santo não encontrado", content = @Content)
     })
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> excluir(@PathVariable Long id) {
+    public ResponseEntity<Void> excluir(@Parameter(description = "Id do(a) santo", example = "1") @PathVariable Long id) {
         repository.delete(buscarSanto(id));
         return ResponseEntity.noContent().build();
     }
@@ -104,7 +106,7 @@ public class SantoController {
             @ApiResponse(responseCode = "200", description = "Lista paginada de santos do país informado")
     })
     @GetMapping("/pais/{pais}")
-    public PagedModel<EntityModel<Santo>> buscarPorPais(@PathVariable String pais,
+    public PagedModel<EntityModel<Santo>> buscarPorPais(@Parameter(description = "País de origem (exato)", example = "Brasil") @PathVariable String pais,
                                                         @ParameterObject Pageable pageable) {
         return pagedAssembler.toModel(repository.findByPaisOrigemIgnoreCase(pais, pageable), this::toModel);
     }
@@ -115,6 +117,9 @@ public class SantoController {
     }
 
     private Papa buscarPapa(Long papaId) {
+        if (papaId == null) {
+            throw new DadosInvalidosException("canonizadoPor.id", "Informe o id do papa que canonizou, ex.: {\"id\": 6}");
+        }
         return papaRepository.findById(papaId)
                 .orElseThrow(() -> new RecursoNaoEncontradoException("papa", papaId));
     }

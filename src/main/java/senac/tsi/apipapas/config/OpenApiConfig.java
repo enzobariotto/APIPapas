@@ -3,7 +3,12 @@ package senac.tsi.apipapas.config;
 import io.swagger.v3.oas.annotations.enums.SecuritySchemeIn;
 import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;
 import io.swagger.v3.oas.annotations.security.SecurityScheme;
+import io.swagger.v3.core.converter.ModelConverters;
+import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.Operation;
+import io.swagger.v3.oas.models.media.Content;
+import io.swagger.v3.oas.models.media.MediaType;
+import io.swagger.v3.oas.models.media.Schema;
 import io.swagger.v3.oas.models.media.StringSchema;
 import io.swagger.v3.oas.models.parameters.HeaderParameter;
 import io.swagger.v3.oas.models.responses.ApiResponse;
@@ -19,6 +24,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import senac.tsi.apipapas.controller.ChaveApiController;
+import senac.tsi.apipapas.exception.ErroApi;
 import senac.tsi.apipapas.idempotencia.IdempotenciaFilter;
 import senac.tsi.apipapas.seguranca.ApiKeyFilter;
 
@@ -54,6 +60,14 @@ class OpenApiConfig {
                 .group(nome)
                 .displayName("Versão " + versao + " (X-API-Version: " + versao + ")")
                 .addOpenApiMethodFilter(metodo -> atendeVersao(metodo, versao))
+                .addOpenApiCustomizer(openApi -> {
+                    // Registra o schema ErroApi, referenciado por todas as respostas de erro
+                    if (openApi.getComponents() == null) {
+                        openApi.setComponents(new Components());
+                    }
+                    ModelConverters.getInstance().readAll(ErroApi.class)
+                            .forEach((nomeSchema, schema) -> openApi.getComponents().addSchemas(nomeSchema, schema));
+                })
                 .addOperationCustomizer(autenticacaoEIdempotencia())
                 .addOperationCustomizer((operation, handlerMethod) -> {
                     // Header X-API-Version já preenchido com a versão do grupo, para o "Try it out" chamar a versão certa.
@@ -79,34 +93,48 @@ class OpenApiConfig {
     OperationCustomizer autenticacaoEIdempotencia() {
         return (operation, handlerMethod) -> {
             adicionar(operation, "429", "Limite de requisições excedido. Veja o header Retry-After");
-            if (handlerMethod.getBeanType().equals(ChaveApiController.class)) {
-                return operation;
+            if (!handlerMethod.getBeanType().equals(ChaveApiController.class)) {
+                documentarEscrita(operation, handlerMethod.hasMethodAnnotation(PostMapping.class),
+                        handlerMethod.hasMethodAnnotation(PutMapping.class) || handlerMethod.hasMethodAnnotation(DeleteMapping.class));
             }
-            boolean post = handlerMethod.hasMethodAnnotation(PostMapping.class);
-            boolean escrita = post || handlerMethod.hasMethodAnnotation(PutMapping.class)
-                    || handlerMethod.hasMethodAnnotation(DeleteMapping.class);
-            if (!escrita) {
-                return operation;
-            }
-
-            operation.addSecurityItem(new SecurityRequirement().addList("ApiKey"));
-            adicionar(operation, "401", "Header X-API-Key ausente, ou chave inválida ou revogada");
-
-            if (post) {
-                operation.addParametersItem(new HeaderParameter()
-                        .name(IdempotenciaFilter.HEADER)
-                        .required(true)
-                        .description("Valor único por operação (ex.: um UUID). Repetir a mesma chave com o mesmo corpo "
-                                + "devolve a resposta original sem cadastrar de novo.")
-                        .schema(new StringSchema().maxLength(100).example("3f2b8c1e-9d4a-4c6b-8e2f-1a7d5c9b0e34")));
-                adicionar(operation, "201", "Requisição repetida: devolve a resposta original, com o header "
-                        + IdempotenciaFilter.HEADER_REPETIDA + ": true");
-                adicionar(operation, "400", "Header " + IdempotenciaFilter.HEADER + " ausente");
-                adicionar(operation, "409", "Já existe uma requisição com esta chave de idempotência em processamento");
-                adicionar(operation, "422", "A chave de idempotência já foi usada com uma requisição diferente");
-            }
+            corpoDeErro(operation);
             return operation;
         };
+    }
+
+    /** Toda resposta 4xx/5xx documenta o corpo no formato ErroApi. */
+    private static void corpoDeErro(Operation operation) {
+        operation.getResponses().forEach((status, resposta) -> {
+            if (status.startsWith("4") || status.startsWith("5")) {
+                resposta.setContent(new Content().addMediaType("application/json",
+                        new MediaType().schema(new Schema<>().$ref("#/components/schemas/ErroApi"))));
+            }
+        });
+    }
+
+    /** POST, PUT e DELETE exigem chave de API; POST também exige X-Idempotency-Key. */
+    private static void documentarEscrita(Operation operation, boolean post, boolean putOuDelete) {
+        boolean escrita = post || putOuDelete;
+        if (!escrita) {
+            return;
+        }
+
+        operation.addSecurityItem(new SecurityRequirement().addList("ApiKey"));
+        adicionar(operation, "401", "Header X-API-Key ausente, ou chave inválida ou revogada");
+
+        if (post) {
+            operation.addParametersItem(new HeaderParameter()
+                    .name(IdempotenciaFilter.HEADER)
+                    .required(true)
+                    .description("Valor único por operação (ex.: um UUID). Repetir a mesma chave com o mesmo corpo "
+                            + "devolve a resposta original sem cadastrar de novo.")
+                    .schema(new StringSchema().maxLength(100).example("3f2b8c1e-9d4a-4c6b-8e2f-1a7d5c9b0e34")));
+            adicionar(operation, "201", "Requisição repetida: devolve a resposta original, com o header "
+                    + IdempotenciaFilter.HEADER_REPETIDA + ": true");
+            adicionar(operation, "400", "Header " + IdempotenciaFilter.HEADER + " ausente");
+            adicionar(operation, "409", "Já existe uma requisição com esta chave de idempotência em processamento");
+            adicionar(operation, "422", "A chave de idempotência já foi usada com uma requisição diferente");
+        }
     }
 
     /** Adiciona a resposta ou, se o status já estiver documentado, complementa a descrição existente. */

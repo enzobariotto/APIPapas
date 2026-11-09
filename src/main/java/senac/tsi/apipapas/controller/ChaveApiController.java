@@ -5,6 +5,7 @@ import senac.tsi.apipapas.model.ChaveApi;
 import senac.tsi.apipapas.repository.ChaveApiRepository;
 import senac.tsi.apipapas.seguranca.ChaveApiService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -99,7 +100,7 @@ public class ChaveApiController {
             @ApiResponse(responseCode = "404", description = "Chave não encontrada", content = @Content)
     })
     @GetMapping("/{id}")
-    public EntityModel<ChaveApi> buscar(@PathVariable Long id) {
+    public EntityModel<ChaveApi> buscar(@Parameter(description = "Id do(a) chave de API", example = "1") @PathVariable Long id) {
         return toModel(buscarChave(id));
     }
 
@@ -112,7 +113,7 @@ public class ChaveApiController {
             @ApiResponse(responseCode = "404", description = "Chave não encontrada", content = @Content)
     })
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> revogar(@PathVariable Long id) {
+    public ResponseEntity<Void> revogar(@Parameter(description = "Id do(a) chave de API", example = "1") @PathVariable Long id) {
         ChaveApi chave = buscarChave(id);
         if (chave.isAtiva()) {
             chave.revogar();

@@ -5,12 +5,17 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
+import senac.tsi.apipapas.validacao.PeriodoValido;
+import senac.tsi.apipapas.validacao.PontificadoConsistente;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
 @Entity
+@PeriodoValido(inicio = "inicioPontificado", fim = "fimPontificado",
+        message = "A data de fim do pontificado não pode ser anterior à data de início")
+@PontificadoConsistente
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Papa {
 
@@ -20,19 +25,23 @@ public class Papa {
     private Long id;
 
     @NotBlank(message = "O nome papal é obrigatório")
+    @Size(max = 100, message = "O nome papal deve ter no máximo 100 caracteres")
     @Schema(example = "Francisco")
     private String nomePapal;
 
     @NotBlank(message = "O nome de batismo é obrigatório")
+    @Size(max = 150, message = "O nome de batismo deve ter no máximo 150 caracteres")
     @Schema(example = "Jorge Mario Bergoglio")
     private String nomeBatismo;
 
     @NotNull(message = "O número de ordem é obrigatório")
     @Positive(message = "O número de ordem deve ser positivo")
+    @Max(value = 1000, message = "O número de ordem deve ser no máximo 1000")
     @Schema(description = "Posição na lista de papas (São Pedro = 1)", example = "266")
     private Integer numeroOrdem;
 
     @NotBlank(message = "O país de nascimento é obrigatório")
+    @Size(max = 60, message = "O país de nascimento deve ter no máximo 60 caracteres")
     @Schema(example = "Argentina")
     private String paisNascimento;
 
@@ -42,7 +51,7 @@ public class Papa {
     private LocalDate inicioPontificado;
 
     @PastOrPresent(message = "A data de fim não pode estar no futuro")
-    @Schema(description = "Vazio se o papa ainda está em exercício", example = "2025-04-21")
+    @Schema(description = "Obrigatória para RENUNCIA e FALECIMENTO; vazia se o papa está EM_EXERCICIO. Não pode ser anterior ao início", example = "2025-04-21")
     private LocalDate fimPontificado;
 
     @NotNull(message = "A situação é obrigatória")

@@ -35,7 +35,34 @@ Cada entidade tem: `GET` (lista paginada), `GET /{id}`, `POST`, `PUT /{id}`, `DE
 
 Paginação: `?page=0&size=5&sort=nome`
 
-Status: 200 (ok), 201 (criado), 204 (excluído), 400 (dados inválidos), 401 (sem chave de API ou chave inválida), 403 (não é admin), 404 (não encontrado), 409 (registro vinculado / duplicado / requisição idempotente em processamento), 422 (chave de idempotência reutilizada com outro corpo).
+Status: 200 (ok), 201 (criado), 204 (excluído), 400 (dados inválidos), 401 (sem chave de API ou chave inválida), 403 (não é admin), 404 (não encontrado), 405 (método não permitido), 409 (registro vinculado / duplicado / requisição idempotente em processamento), 415 (corpo que não é JSON), 422 (chave de idempotência reutilizada com outro corpo), 429 (limite de requisições), 500 (erro inesperado).
+
+## Validações e erros
+
+Os dados de entrada são validados com Bean Validation (`@NotBlank`, `@NotNull`, `@Size`, `@Min`, `@Max`, `@PastOrPresent` etc.), inclusive nos parâmetros de consulta. Também há validações próprias (pacote `validacao`):
+
+| Validação | Regra |
+|---|---|
+| `@PeriodoValido` | A data de fim não pode ser anterior à de início (papa, conclave e concílio) |
+| `@PontificadoConsistente` | Papa `EM_EXERCICIO` não tem data de fim; `RENUNCIA` e `FALECIMENTO` precisam ter |
+
+O `ApiExceptionHandler` (`@RestControllerAdvice`) trata as exceções e todos os erros, inclusive os dos filtros (chave de API, idempotência e rate limiting), saem no mesmo formato:
+
+```json
+{
+  "timestamp": "2026-11-08T14:30:00Z",
+  "status": 400,
+  "erro": "Bad Request",
+  "mensagem": "Dados inválidos. Corrija os campos indicados.",
+  "caminho": "/papas",
+  "campos": {
+    "nomePapal": "O nome papal é obrigatório",
+    "fimPontificado": "Informe a data de fim do pontificado para a situação RENUNCIA"
+  }
+}
+```
+
+Exemplos tratados: campos obrigatórios ou inválidos, JSON malformado, tipo errado (`/papas/abc`, `"numeroOrdem": "abc"`, data fora do formato `AAAA-MM-DD`), enum inválido (lista os valores aceitos), parâmetro ausente, ordenação por campo inexistente (`?sort=xyz`), versão não suportada, rota inexistente, método não permitido, registro duplicado ou vinculado. Erros inesperados retornam `500` sem expor detalhes internos e são registrados no log. O tamanho de página máximo é 100.
 
 ## Autenticação com chave de API (`X-API-Key`)
 

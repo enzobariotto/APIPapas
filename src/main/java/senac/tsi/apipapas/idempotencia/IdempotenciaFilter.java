@@ -59,12 +59,12 @@ public class IdempotenciaFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
         String chave = request.getHeader(HEADER);
         if (chave == null || chave.isBlank()) {
-            ApiKeyFilter.erro(response, HttpServletResponse.SC_BAD_REQUEST,
+            ApiKeyFilter.erro(request, response, HttpServletResponse.SC_BAD_REQUEST,
                     "O header " + HEADER + " é obrigatório em requisições POST.");
             return;
         }
         if (chave.length() > TAMANHO_MAXIMO_CHAVE) {
-            ApiKeyFilter.erro(response, HttpServletResponse.SC_BAD_REQUEST,
+            ApiKeyFilter.erro(request, response, HttpServletResponse.SC_BAD_REQUEST,
                     "O header " + HEADER + " deve ter no máximo " + TAMANHO_MAXIMO_CHAVE + " caracteres.");
             return;
         }
@@ -82,10 +82,10 @@ public class IdempotenciaFilter extends OncePerRequestFilter {
         if (existente.isPresent()) {
             RegistroIdempotencia registro = existente.get();
             if (!registro.getHashRequisicao().equals(hash)) {
-                ApiKeyFilter.erro(response, 422,
+                ApiKeyFilter.erro(request, response, 422,
                         "A chave " + HEADER + " informada já foi usada com uma requisição diferente.");
             } else if (registro.getSituacao() == RegistroIdempotencia.Situacao.PROCESSANDO) {
-                ApiKeyFilter.erro(response, HttpServletResponse.SC_CONFLICT,
+                ApiKeyFilter.erro(request, response, HttpServletResponse.SC_CONFLICT,
                         "Já existe uma requisição com esta chave " + HEADER + " em processamento.");
             } else {
                 repetirResposta(registro, response);
@@ -98,7 +98,7 @@ public class IdempotenciaFilter extends OncePerRequestFilter {
             registro = repository.saveAndFlush(new RegistroIdempotencia(cliente, chave, hash));
         } catch (DataIntegrityViolationException e) {
             // Outra requisição com a mesma chave chegou ao mesmo tempo e registrou primeiro.
-            ApiKeyFilter.erro(response, HttpServletResponse.SC_CONFLICT,
+            ApiKeyFilter.erro(request, response, HttpServletResponse.SC_CONFLICT,
                     "Já existe uma requisição com esta chave " + HEADER + " em processamento.");
             return;
         }

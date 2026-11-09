@@ -3,10 +3,13 @@ package senac.tsi.apipapas.model;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
+import senac.tsi.apipapas.validacao.PeriodoValido;
 
 import java.time.LocalDate;
 
 @Entity
+@PeriodoValido(inicio = "dataInicio", fim = "dataFim",
+        message = "A data de término não pode ser anterior à data de início")
 public class Conclave {
 
     @Id
@@ -26,11 +29,13 @@ public class Conclave {
 
     @NotNull(message = "O número de cardeais é obrigatório")
     @Min(value = 1, message = "Deve haver pelo menos 1 cardeal")
+    @Max(value = 300, message = "O número de cardeais deve ser no máximo 300")
     @Schema(description = "Cardeais com direito a voto", example = "115")
     private Integer numeroCardeais;
 
     @NotNull(message = "O número de escrutínios é obrigatório")
     @Min(value = 1, message = "Deve haver pelo menos 1 escrutínio")
+    @Max(value = 1000, message = "O número de escrutínios deve ser no máximo 1000")
     @Schema(description = "Quantidade de votações até a eleição", example = "5")
     private Integer numeroEscrutinios;
 

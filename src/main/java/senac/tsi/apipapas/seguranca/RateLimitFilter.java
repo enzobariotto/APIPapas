@@ -91,7 +91,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
         if (estado[0] > limite) {
             response.setHeader(HttpHeaders.RETRY_AFTER, String.valueOf(segundosParaReset));
-            ApiKeyFilter.erro(response, 429, "Limite de " + limite + " requisições por "
+            ApiKeyFilter.erro(request, response, 429, "Limite de " + limite + " requisições por "
                     + (janelaMillis / 1000) + " segundos excedido. Tente novamente em " + segundosParaReset + " segundos.");
             return;
         }
