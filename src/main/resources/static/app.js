@@ -2,7 +2,8 @@
 
 /*
  * Front-end simples da API de Papas.
- * É servido pelo próprio Spring Boot (src/main/resources/static), então chama a API na mesma origem.
+ * Pode ser servido pelo próprio Spring Boot (src/main/resources/static) ou por outro serviço (ex.: Vercel):
+ * o endereço da API vem de API_URL, definido em config.js.
  */
 
 const TAMANHO_PAGINA = 10;
@@ -185,7 +186,8 @@ async function api(metodo, url, corpo, chaveIdempotencia) {
 
     let resposta;
     try {
-        resposta = await fetch(url, {
+        // Caminhos relativos ("/papas") vão para API_URL; links HATEOAS já vêm com o endereço completo.
+        resposta = await fetch(url.startsWith('/') ? API_URL + url : url, {
             method: metodo,
             headers,
             body: corpo !== undefined ? JSON.stringify(corpo) : undefined,
@@ -648,6 +650,7 @@ $('#novo').addEventListener('click', () => abrirFormulario(null));
 
 // ------------------------------------------------------------------ início
 
+$('.link-swagger').href = `${API_URL}/swagger-ui.html`;
 $('#chave-api').value = lerChaveApi();
 $('#chave-api').addEventListener('change', evento => salvarChaveApi(evento.target.value.trim()));
 
