@@ -1,6 +1,7 @@
 package senac.tsi.apipapas.seguranca;
 
 import org.springframework.http.HttpStatus;
+import senac.tsi.apipapas.config.Documentacao;
 import senac.tsi.apipapas.exception.ErroApi;
 
 import jakarta.servlet.FilterChain;
@@ -60,7 +61,8 @@ public class ApiKeyFilter extends OncePerRequestFilter {
             request.setAttribute(ATRIBUTO_CLIENTE, "admin");
         } else if (METODOS_ESCRITA.contains(request.getMethod()) && ehRecurso(caminho)) {
             if (chave == null || chave.isBlank()) {
-                erro(request, response, HttpServletResponse.SC_UNAUTHORIZED, "Informe uma chave de API válida no header " + HEADER + ".");
+                erro(request, response, HttpServletResponse.SC_UNAUTHORIZED, "Informe uma chave de API válida no header " + HEADER
+                        + ". Para solicitar uma chave, veja " + Documentacao.TERMOS_CHAVES);
                 return;
             }
             if (chaveAdmin.confere(chave)) {
@@ -68,7 +70,8 @@ public class ApiKeyFilter extends OncePerRequestFilter {
             } else {
                 var chaveApi = chaveApiService.validar(chave);
                 if (chaveApi.isEmpty()) {
-                    erro(request, response, HttpServletResponse.SC_UNAUTHORIZED, "Chave de API inválida ou revogada.");
+                    erro(request, response, HttpServletResponse.SC_UNAUTHORIZED, "Chave de API inválida ou revogada. "
+                            + "Para solicitar uma nova chave, veja " + Documentacao.TERMOS_CHAVES);
                     return;
                 }
                 request.setAttribute(ATRIBUTO_CLIENTE, "chave-" + chaveApi.get().getId());

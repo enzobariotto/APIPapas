@@ -26,7 +26,7 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @RestController
 @RequestMapping("/enciclicas")
-@Tag(name = "Encíclicas", description = "Encíclicas escritas pelos papas (One-to-Many com Papa)")
+@Tag(name = "Encíclicas", description = "Encíclicas (cartas) escritas pelos papas. Relação One-to-Many: um papa escreve várias encíclicas")
 public class EnciclicaController {
 
     private final EnciclicaRepository repository;
@@ -40,7 +40,8 @@ public class EnciclicaController {
         this.pagedAssembler = pagedAssembler;
     }
 
-    @Operation(summary = "Lista as encíclicas")
+    @Operation(summary = "Lista as encíclicas",
+            description = "Cada encíclica traz os dados do papa que a escreveu e o link `papa` para o registro completo dele.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Lista paginada de encíclicas")
     })
@@ -49,7 +50,8 @@ public class EnciclicaController {
         return pagedAssembler.toModel(repository.findAll(pageable), this::toModel);
     }
 
-    @Operation(summary = "Busca uma encíclica pelo id")
+    @Operation(summary = "Busca uma encíclica pelo id",
+            description = "Traz os links para alterar (`update`), excluir (`delete`) e para o papa (`papa`).")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Encíclica encontrada"),
             @ApiResponse(responseCode = "404", description = "Encíclica não encontrada", content = @Content)
@@ -59,7 +61,8 @@ public class EnciclicaController {
         return toModel(buscarEnciclica(id));
     }
 
-    @Operation(summary = "Cadastra uma encíclica")
+    @Operation(summary = "Cadastra uma encíclica",
+            description = "O título em latim, a data de publicação e o papa são obrigatórios; o título em português é opcional. Informe o papa pelo id, por exemplo `\"papa\": {\"id\": 6}`.")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Encíclica cadastrada"),
             @ApiResponse(responseCode = "400", description = "Dados inválidos", content = @Content),
@@ -74,7 +77,8 @@ public class EnciclicaController {
                 .body(toModel(salva));
     }
 
-    @Operation(summary = "Atualiza uma encíclica")
+    @Operation(summary = "Atualiza uma encíclica",
+            description = "Substitui todos os dados do registro (PUT): envie o objeto completo, inclusive os campos que não mudaram. Valem as mesmas validações do cadastro.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Encíclica atualizada"),
             @ApiResponse(responseCode = "400", description = "Dados inválidos", content = @Content),
@@ -90,7 +94,8 @@ public class EnciclicaController {
         return toModel(repository.save(enciclica));
     }
 
-    @Operation(summary = "Exclui uma encíclica")
+    @Operation(summary = "Exclui uma encíclica",
+            description = "Remove a encíclica. O papa não é afetado.")
     @ApiResponses({
             @ApiResponse(responseCode = "204", description = "Encíclica excluída", content = @Content),
             @ApiResponse(responseCode = "404", description = "Encíclica não encontrada", content = @Content)
@@ -101,7 +106,8 @@ public class EnciclicaController {
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(summary = "Lista as encíclicas de um papa")
+    @Operation(summary = "Lista as encíclicas de um papa",
+            description = "Consulta personalizada: encíclicas escritas pelo papa informado. É o destino do link `enciclicas` de cada papa. Ex.: /enciclicas/papa/6.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Lista paginada de encíclicas do papa")
     })

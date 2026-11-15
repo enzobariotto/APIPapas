@@ -25,7 +25,7 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @RestController
 @RequestMapping("/papas")
-@Tag(name = "Papas", description = "Cadastro dos papas da Igreja Católica")
+@Tag(name = "Papas", description = "Papas da Igreja Católica. É o recurso central: conclaves, encíclicas, concílios e santos se ligam a ele")
 public class PapaController {
 
     private final PapaRepository repository;
@@ -78,7 +78,8 @@ public class PapaController {
         return toModelV2(buscarPapa(id));
     }
 
-    @Operation(summary = "Cadastra um papa")
+    @Operation(summary = "Cadastra um papa",
+            description = "A situação precisa combinar com a data de fim: EM_EXERCICIO sem data de fim; FALECIMENTO ou RENUNCIA com data de fim, que não pode ser anterior ao início. O número de ordem é a posição na lista de papas (São Pedro = 1).")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Papa cadastrado"),
             @ApiResponse(responseCode = "400", description = "Dados inválidos", content = @Content)
@@ -91,7 +92,8 @@ public class PapaController {
         return ResponseEntity.created(linkTo(methodOn(PapaController.class).buscar(salvo.getId())).toUri()).body(model);
     }
 
-    @Operation(summary = "Atualiza um papa")
+    @Operation(summary = "Atualiza um papa",
+            description = "Substitui todos os dados do registro (PUT): envie o objeto completo, inclusive os campos que não mudaram. Valem as mesmas validações do cadastro.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Papa atualizado"),
             @ApiResponse(responseCode = "400", description = "Dados inválidos", content = @Content),
@@ -110,7 +112,8 @@ public class PapaController {
         return toModel(repository.save(papa));
     }
 
-    @Operation(summary = "Exclui um papa")
+    @Operation(summary = "Exclui um papa",
+            description = "Só é possível excluir um papa sem registros vinculados. Se ele tiver conclave, encíclicas, concílios ou santos, exclua ou altere esses registros antes; caso contrário, a resposta é 409.")
     @ApiResponses({
             @ApiResponse(responseCode = "204", description = "Papa excluído", content = @Content),
             @ApiResponse(responseCode = "404", description = "Papa não encontrado", content = @Content),
@@ -122,7 +125,8 @@ public class PapaController {
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(summary = "Busca papas pela situação")
+    @Operation(summary = "Busca papas pela situação",
+            description = "Consulta personalizada: filtra os papas pela situação do pontificado (EM_EXERCICIO, FALECIMENTO ou RENUNCIA). Ex.: /papas/situacao/RENUNCIA.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Lista paginada de papas com a situação informada"),
             @ApiResponse(responseCode = "400", description = "Situação inválida", content = @Content)

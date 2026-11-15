@@ -26,7 +26,7 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @RestController
 @RequestMapping("/santos")
-@Tag(name = "Santos", description = "Santos canonizados pelos papas (Many-to-One com Papa)")
+@Tag(name = "Santos", description = "Santos canonizados pelos papas. Relação Many-to-One: cada santo foi canonizado por um papa")
 public class SantoController {
 
     private final SantoRepository repository;
@@ -40,7 +40,8 @@ public class SantoController {
         this.pagedAssembler = pagedAssembler;
     }
 
-    @Operation(summary = "Lista os santos")
+    @Operation(summary = "Lista os santos",
+            description = "Cada santo traz os dados do papa que o canonizou e o link `papa` para o registro completo dele.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Lista paginada de santos")
     })
@@ -49,7 +50,8 @@ public class SantoController {
         return pagedAssembler.toModel(repository.findAll(pageable), this::toModel);
     }
 
-    @Operation(summary = "Busca um santo pelo id")
+    @Operation(summary = "Busca um santo pelo id",
+            description = "Traz os links para alterar (`update`), excluir (`delete`) e para o papa que o canonizou (`papa`).")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Santo encontrado"),
             @ApiResponse(responseCode = "404", description = "Santo não encontrado", content = @Content)
@@ -59,7 +61,8 @@ public class SantoController {
         return toModel(buscarSanto(id));
     }
 
-    @Operation(summary = "Cadastra um santo")
+    @Operation(summary = "Cadastra um santo",
+            description = "Informe o papa que canonizou pelo id, por exemplo `\"canonizadoPor\": {\"id\": 6}`. A data de canonização não pode estar no futuro.")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Santo cadastrado"),
             @ApiResponse(responseCode = "400", description = "Dados inválidos", content = @Content),
@@ -74,7 +77,8 @@ public class SantoController {
                 .body(toModel(salvo));
     }
 
-    @Operation(summary = "Atualiza um santo")
+    @Operation(summary = "Atualiza um santo",
+            description = "Substitui todos os dados do registro (PUT): envie o objeto completo, inclusive os campos que não mudaram. Valem as mesmas validações do cadastro.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Santo atualizado"),
             @ApiResponse(responseCode = "400", description = "Dados inválidos", content = @Content),
@@ -90,7 +94,8 @@ public class SantoController {
         return toModel(repository.save(santo));
     }
 
-    @Operation(summary = "Exclui um santo")
+    @Operation(summary = "Exclui um santo",
+            description = "Remove o santo. O papa que o canonizou não é afetado.")
     @ApiResponses({
             @ApiResponse(responseCode = "204", description = "Santo excluído", content = @Content),
             @ApiResponse(responseCode = "404", description = "Santo não encontrado", content = @Content)
@@ -101,7 +106,8 @@ public class SantoController {
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(summary = "Busca santos por país de origem")
+    @Operation(summary = "Busca santos por país de origem",
+            description = "Consulta personalizada: santos do país informado (nome exato, sem diferenciar maiúsculas de minúsculas). Ex.: /santos/pais/Brasil.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Lista paginada de santos do país informado")
     })

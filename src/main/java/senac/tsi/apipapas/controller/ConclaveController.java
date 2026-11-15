@@ -27,7 +27,7 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @RestController
 @RequestMapping("/conclaves")
-@Tag(name = "Conclaves", description = "Conclaves que elegeram os papas (One-to-One com Papa)")
+@Tag(name = "Conclaves", description = "Conclaves que elegeram os papas. Relação One-to-One: cada papa tem no máximo um conclave")
 public class ConclaveController {
 
     private final ConclaveRepository repository;
@@ -41,7 +41,8 @@ public class ConclaveController {
         this.pagedAssembler = pagedAssembler;
     }
 
-    @Operation(summary = "Lista os conclaves")
+    @Operation(summary = "Lista os conclaves",
+            description = "Cada conclave traz os dados do papa eleito e o link `papa` para o registro completo dele.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Lista paginada de conclaves")
     })
@@ -50,7 +51,8 @@ public class ConclaveController {
         return pagedAssembler.toModel(repository.findAll(pageable), this::toModel);
     }
 
-    @Operation(summary = "Busca um conclave pelo id")
+    @Operation(summary = "Busca um conclave pelo id",
+            description = "Traz os links para alterar (`update`), excluir (`delete`) e para o papa eleito (`papa`).")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Conclave encontrado"),
             @ApiResponse(responseCode = "404", description = "Conclave não encontrado", content = @Content)
@@ -60,7 +62,8 @@ public class ConclaveController {
         return toModel(buscarConclave(id));
     }
 
-    @Operation(summary = "Cadastra um conclave")
+    @Operation(summary = "Cadastra um conclave",
+            description = "Informe o papa eleito pelo id, por exemplo `\"papa\": {\"id\": 3}`. Cada papa pode ter só um conclave: informar um papa que já tem conclave retorna 409. A data de término não pode ser anterior à de início.")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Conclave cadastrado"),
             @ApiResponse(responseCode = "400", description = "Dados inválidos", content = @Content),
@@ -76,7 +79,8 @@ public class ConclaveController {
                 .body(toModel(salvo));
     }
 
-    @Operation(summary = "Atualiza um conclave")
+    @Operation(summary = "Atualiza um conclave",
+            description = "Substitui todos os dados do registro (PUT): envie o objeto completo, inclusive os campos que não mudaram. Valem as mesmas validações do cadastro.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Conclave atualizado"),
             @ApiResponse(responseCode = "400", description = "Dados inválidos", content = @Content),
@@ -94,7 +98,8 @@ public class ConclaveController {
         return toModel(repository.save(conclave));
     }
 
-    @Operation(summary = "Exclui um conclave")
+    @Operation(summary = "Exclui um conclave",
+            description = "Remove o conclave. O papa eleito não é afetado.")
     @ApiResponses({
             @ApiResponse(responseCode = "204", description = "Conclave excluído", content = @Content),
             @ApiResponse(responseCode = "404", description = "Conclave não encontrado", content = @Content)
@@ -105,7 +110,8 @@ public class ConclaveController {
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(summary = "Busca conclaves rápidos")
+    @Operation(summary = "Busca conclaves rápidos",
+            description = "Consulta personalizada: conclaves que elegeram o papa com até `maxEscrutinios` votações. Ex.: /conclaves/rapidos?maxEscrutinios=4.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Lista paginada de conclaves com até o número de escrutínios informado"),
             @ApiResponse(responseCode = "400", description = "Parâmetro maxEscrutinios ausente ou inválido", content = @Content)

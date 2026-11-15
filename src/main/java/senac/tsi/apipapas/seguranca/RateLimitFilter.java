@@ -10,6 +10,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Component;
 import org.springframework.web.cors.CorsUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
+import senac.tsi.apipapas.config.Documentacao;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -92,7 +93,8 @@ public class RateLimitFilter extends OncePerRequestFilter {
         if (estado[0] > limite) {
             response.setHeader(HttpHeaders.RETRY_AFTER, String.valueOf(segundosParaReset));
             ApiKeyFilter.erro(request, response, 429, "Limite de " + limite + " requisições por "
-                    + (janelaMillis / 1000) + " segundos excedido. Tente novamente em " + segundosParaReset + " segundos.");
+                    + (janelaMillis / 1000) + " segundos excedido. Tente novamente em " + segundosParaReset
+                    + " segundos. Limites de uso: " + Documentacao.TERMOS_LIMITES);
             return;
         }
         chain.doFilter(request, response);

@@ -6,6 +6,9 @@ import io.swagger.v3.oas.annotations.security.SecurityScheme;
 import io.swagger.v3.core.converter.ModelConverters;
 import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.Operation;
+import io.swagger.v3.oas.models.info.Contact;
+import io.swagger.v3.oas.models.info.Info;
+import io.swagger.v3.oas.models.info.License;
 import io.swagger.v3.oas.models.media.Content;
 import io.swagger.v3.oas.models.media.MediaType;
 import io.swagger.v3.oas.models.media.Schema;
@@ -16,6 +19,7 @@ import io.swagger.v3.oas.models.responses.ApiResponses;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import org.springdoc.core.customizers.OperationCustomizer;
 import org.springdoc.core.models.GroupedOpenApi;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.annotation.AnnotatedElementUtils;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.context.annotation.Bean;
@@ -29,16 +33,32 @@ import senac.tsi.apipapas.idempotencia.IdempotenciaFilter;
 import senac.tsi.apipapas.seguranca.ApiKeyFilter;
 
 import java.lang.reflect.Method;
+import java.time.Duration;
 
 /**
- * Documenta no Swagger a autenticação por chave de API e a idempotência,
- * que são aplicadas pelos filtros ApiKeyFilter e IdempotenciaFilter.
+ * Configuração da documentação Swagger/OpenAPI:
+ * - informações gerais (introdução, termos de uso, licença), uma por versão da API;
+ * - autenticação por chave de API, idempotência e rate limiting, aplicados pelos filtros
+ *   ApiKeyFilter, IdempotenciaFilter e RateLimitFilter.
  */
 @Configuration
 @SecurityScheme(name = "ApiKey", type = SecuritySchemeType.APIKEY, in = SecuritySchemeIn.HEADER,
         paramName = ApiKeyFilter.HEADER,
-        description = "Chave de API gerada em /chaves-api (ou a chave de admin). Exigida em POST, PUT e DELETE.")
+        description = "Chave de API para cadastrar, alterar e excluir. Para solicitar uma, veja a seção 3 dos "
+                + "Termos de Uso. O gerenciamento de chaves (/chaves-api) aceita somente a chave de admin.")
 class OpenApiConfig {
+
+    private final int limiteAnonimo;
+    private final int limiteComChave;
+    private final Duration janela;
+
+    OpenApiConfig(@Value("${app.rate-limit.limite-anonimo:60}") int limiteAnonimo,
+                  @Value("${app.rate-limit.limite-com-chave:120}") int limiteComChave,
+                  @Value("${app.rate-limit.janela:60s}") Duration janela) {
+        this.limiteAnonimo = limiteAnonimo;
+        this.limiteComChave = limiteComChave;
+        this.janela = janela;
+    }
 
     /*
      * Um grupo de documentação por versão da API (seletor "Select a definition" no Swagger UI).
@@ -61,6 +81,7 @@ class OpenApiConfig {
                 .displayName("Versão " + versao + " (X-API-Version: " + versao + ")")
                 .addOpenApiMethodFilter(metodo -> atendeVersao(metodo, versao))
                 .addOpenApiCustomizer(openApi -> {
+                    openApi.setInfo(informacoes(versao));
                     // Registra o schema ErroApi, referenciado por todas as respostas de erro
                     if (openApi.getComponents() == null) {
                         openApi.setComponents(new Components());
@@ -89,10 +110,116 @@ class OpenApiConfig {
         return mapping == null || mapping.version().isEmpty() || mapping.version().equals(versao);
     }
 
+    // ---------------------------------------------------------------- introdução
+
+    private Info informacoes(String versao) {
+        return new Info()
+                .title("API de Papas")
+                .version(versao)
+                .description(introducao(versao))
+                .termsOfService(Documentacao.TERMOS_DE_USO)
+                .contact(new Contact().name("Enzo Bariotto").url(Documentacao.REPOSITORIO))
+                .license(new License().name("Licença de Uso da API de Papas").url(Documentacao.LICENCA));
+    }
+
+    private String introducao(String versao) {
+        String sobreVersao = "1".equals(versao)
+                ? """
+                  Esta é a documentação da **versão 1**, usada quando o header `X-API-Version` não é enviado. \
+                  A versão 2 muda apenas `GET /papas` e `GET /papas/{id}`, que passam a agrupar nome e pontificado \
+                  e a informar a duração do pontificado. Para ver a outra versão, use **Select a definition**, \
+                  no topo da página."""
+                : """
+                  Esta é a documentação da **versão 2**: envie o header `X-API-Version: 2` (o **Try it out** já envia). \
+                  Em relação à versão 1, mudam apenas `GET /papas` e `GET /papas/{id}`, que agrupam nome e pontificado \
+                  e informam a duração do pontificado; os demais endpoints são iguais nas duas versões. \
+                  Para ver a outra versão, use **Select a definition**, no topo da página.""";
+
+        return """
+                API REST com dados históricos sobre os papas da Igreja Católica e os registros ligados a eles: \
+                conclaves, encíclicas, concílios e santos canonizados. Projeto acadêmico do curso de Tecnologia \
+                em Sistemas para Internet do Senac.
+
+                Ao usar a API você concorda com os [Termos de Uso](%s). \
+                Para testar sem o Swagger, use a [interface web](/).
+
+                ### Recursos
+
+                | Recurso | O que é | Relação com Papa |
+                |---|---|---|
+                | **Papas** | Papas da Igreja Católica (recurso central) | — |
+                | **Conclaves** | Eleição que escolheu cada papa | One-to-One: cada papa tem no máximo um conclave |
+                | **Encíclicas** | Cartas escritas pelos papas | One-to-Many: um papa escreve várias encíclicas |
+                | **Concílios** | Concílios ecumênicos | Many-to-Many: um concílio reúne vários papas |
+                | **Santos** | Santos canonizados | Many-to-One: cada santo foi canonizado por um papa |
+
+                Nos cadastros, o papa é informado apenas pelo id, por exemplo `"papa": {"id": 6}`.
+
+                ### Primeiros passos
+
+                1. **Consultar:** as consultas (`GET`) são públicas. Abra `GET /papas`, clique em **Try it out** \
+                e depois em **Execute**.
+                2. **Obter uma chave:** cadastrar, alterar e excluir exigem uma chave de API, gerada pelo \
+                administrador. Veja como solicitar na [seção 3 dos Termos de Uso](%s).
+                3. **Autorizar:** clique em **Authorize** (cadeado), informe a chave e confirme. O Swagger passa a \
+                enviá-la no header `X-API-Key`.
+                4. **Cadastrar:** nos `POST`, preencha `X-Idempotency-Key` com um valor único, por exemplo um UUID. \
+                Se a mesma requisição for reenviada com a mesma chave, a API devolve a resposta original em vez de \
+                cadastrar de novo ([seção 5 dos Termos de Uso](%s)).
+
+                ### Listagens e navegação
+
+                As listagens são paginadas pelos parâmetros `page` (começa em 0), `size` (padrão 20, máximo 100) e \
+                `sort` (ex.: `nomePapal,desc`). As respostas seguem o formato HAL: os registros ficam em `_embedded`, \
+                os dados da página em `page` e os links para as outras páginas (`next`, `prev`, `first`, `last`) em \
+                `_links`. Cada registro também traz links para si mesmo (`self`), para alterar (`update`), para \
+                excluir (`delete`) e para os registros relacionados (ex.: `papa`).
+
+                ### Versões
+
+                %s Política de versões: [seção 6 dos Termos de Uso](%s).
+
+                ### Limite de requisições
+
+                | Cliente | Limite |
+                |---|---|
+                | Sem chave de API (identificado pelo IP) | %d requisições %s |
+                | Com chave de API | %d requisições %s |
+
+                Toda resposta informa o consumo nos headers `X-RateLimit-Limit`, `X-RateLimit-Remaining` e \
+                `X-RateLimit-Reset`. Acima do limite, a API responde `429 Too Many Requests` com o header \
+                `Retry-After`, que indica quantos segundos esperar. Regras completas na \
+                [seção 4 dos Termos de Uso](%s).
+
+                ### Erros
+
+                Toda resposta de erro segue o formato `ErroApi`: `status`, `erro`, `mensagem` (o que aconteceu e \
+                como corrigir), `caminho` e, em erros de validação, `campos` com a mensagem de cada campo inválido.
+                """.formatted(
+                Documentacao.TERMOS_DE_USO,
+                Documentacao.TERMOS_CHAVES,
+                Documentacao.TERMOS_CADASTROS,
+                sobreVersao, Documentacao.TERMOS_VERSOES,
+                limiteAnonimo, descreverJanela(), limiteComChave, descreverJanela(),
+                Documentacao.TERMOS_LIMITES);
+    }
+
+    /** "por minuto", "a cada 5 minutos" ou "a cada 30 segundos". */
+    private String descreverJanela() {
+        long segundos = janela.toSeconds();
+        if (segundos == 60) {
+            return "por minuto";
+        }
+        return segundos % 60 == 0 ? "a cada " + (segundos / 60) + " minutos" : "a cada " + segundos + " segundos";
+    }
+
+    // ---------------------------------------------------------------- respostas comuns
+
     @Bean
     OperationCustomizer autenticacaoEIdempotencia() {
         return (operation, handlerMethod) -> {
-            adicionar(operation, "429", "Limite de requisições excedido. Veja o header Retry-After");
+            adicionar(operation, "429", "Limite de requisições excedido. Aguarde os segundos indicados no header "
+                    + "`Retry-After` ([limites de uso](" + Documentacao.TERMOS_LIMITES + "))");
             if (!handlerMethod.getBeanType().equals(ChaveApiController.class)) {
                 documentarEscrita(operation, handlerMethod.hasMethodAnnotation(PostMapping.class),
                         handlerMethod.hasMethodAnnotation(PutMapping.class) || handlerMethod.hasMethodAnnotation(DeleteMapping.class));
@@ -120,14 +247,15 @@ class OpenApiConfig {
         }
 
         operation.addSecurityItem(new SecurityRequirement().addList("ApiKey"));
-        adicionar(operation, "401", "Header X-API-Key ausente, ou chave inválida ou revogada");
+        adicionar(operation, "401", "Header `X-API-Key` ausente, ou chave inválida ou revogada "
+                + "([como obter uma chave](" + Documentacao.TERMOS_CHAVES + "))");
 
         if (post) {
             operation.addParametersItem(new HeaderParameter()
                     .name(IdempotenciaFilter.HEADER)
                     .required(true)
                     .description("Valor único por operação (ex.: um UUID). Repetir a mesma chave com o mesmo corpo "
-                            + "devolve a resposta original sem cadastrar de novo.")
+                            + "devolve a resposta original sem cadastrar de novo. A resposta fica guardada por 24 horas.")
                     .schema(new StringSchema().maxLength(100).example("3f2b8c1e-9d4a-4c6b-8e2f-1a7d5c9b0e34")));
             adicionar(operation, "201", "Requisição repetida: devolve a resposta original, com o header "
                     + IdempotenciaFilter.HEADER_REPETIDA + ": true");

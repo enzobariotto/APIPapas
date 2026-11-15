@@ -30,7 +30,7 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @RestController
 @RequestMapping("/concilios")
-@Tag(name = "Concílios", description = "Concílios ecumênicos (Many-to-Many com Papa)")
+@Tag(name = "Concílios", description = "Concílios ecumênicos. Relação Many-to-Many: um concílio reúne vários papas e um papa pode participar de vários concílios")
 public class ConcilioController {
 
     private final ConcilioRepository repository;
@@ -44,7 +44,8 @@ public class ConcilioController {
         this.pagedAssembler = pagedAssembler;
     }
 
-    @Operation(summary = "Lista os concílios")
+    @Operation(summary = "Lista os concílios",
+            description = "Cada concílio traz a lista dos papas que participaram dele.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Lista paginada de concílios")
     })
@@ -53,7 +54,8 @@ public class ConcilioController {
         return pagedAssembler.toModel(repository.findAll(pageable), this::toModel);
     }
 
-    @Operation(summary = "Busca um concílio pelo id")
+    @Operation(summary = "Busca um concílio pelo id",
+            description = "Traz os papas participantes e os links para alterar (`update`) e excluir (`delete`).")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Concílio encontrado"),
             @ApiResponse(responseCode = "404", description = "Concílio não encontrado", content = @Content)
@@ -63,7 +65,8 @@ public class ConcilioController {
         return toModel(buscarConcilio(id));
     }
 
-    @Operation(summary = "Cadastra um concílio")
+    @Operation(summary = "Cadastra um concílio",
+            description = "Informe pelo menos um papa pelo id, por exemplo `\"papas\": [{\"id\": 2}, {\"id\": 3}]`. A data de encerramento não pode ser anterior à de início.")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Concílio cadastrado"),
             @ApiResponse(responseCode = "400", description = "Dados inválidos", content = @Content),
@@ -78,7 +81,8 @@ public class ConcilioController {
                 .body(toModel(salvo));
     }
 
-    @Operation(summary = "Atualiza um concílio")
+    @Operation(summary = "Atualiza um concílio",
+            description = "Substitui todos os dados do concílio (PUT), inclusive a lista de papas: os papas que não forem enviados deixam de estar ligados a ele. Valem as mesmas validações do cadastro.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Concílio atualizado"),
             @ApiResponse(responseCode = "400", description = "Dados inválidos", content = @Content),
@@ -95,7 +99,8 @@ public class ConcilioController {
         return toModel(repository.save(concilio));
     }
 
-    @Operation(summary = "Exclui um concílio")
+    @Operation(summary = "Exclui um concílio",
+            description = "Remove o concílio e os vínculos com os papas. Os papas não são excluídos.")
     @ApiResponses({
             @ApiResponse(responseCode = "204", description = "Concílio excluído", content = @Content),
             @ApiResponse(responseCode = "404", description = "Concílio não encontrado", content = @Content)
@@ -106,7 +111,8 @@ public class ConcilioController {
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(summary = "Busca concílios pelo nome")
+    @Operation(summary = "Busca concílios pelo nome",
+            description = "Consulta personalizada: concílios cujo nome contém o texto informado, sem diferenciar maiúsculas de minúsculas. Ex.: /concilios/busca?nome=vaticano.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Lista paginada de concílios cujo nome contém o texto informado"),
             @ApiResponse(responseCode = "400", description = "Parâmetro nome ausente", content = @Content)

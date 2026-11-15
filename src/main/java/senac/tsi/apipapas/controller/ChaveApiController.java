@@ -30,7 +30,7 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @RestController
 @RequestMapping("/chaves-api")
-@Tag(name = "Chaves de API", description = "Geração e gerenciamento das chaves de API dos usuários (exige a chave de admin)")
+@Tag(name = "Chaves de API", description = "Geração e gerenciamento das chaves de API dos usuários. Uso exclusivo do administrador: exige a chave de admin no header X-API-Key")
 @SecurityRequirement(name = "ApiKey")
 public class ChaveApiController {
 
@@ -92,7 +92,8 @@ public class ChaveApiController {
         return pagedAssembler.toModel(repository.findAll(pageable), this::toModel);
     }
 
-    @Operation(summary = "Busca uma chave de API pelo id")
+    @Operation(summary = "Busca uma chave de API pelo id",
+            description = "Mostra se a chave está ativa, quando foi criada, quando foi usada pela última vez e, se revogada, quando. O valor da chave nunca é mostrado.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Chave encontrada"),
             @ApiResponse(responseCode = "401", description = "Header X-API-Key ausente", content = @Content),
