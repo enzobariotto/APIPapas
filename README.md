@@ -6,6 +6,7 @@ API REST em Spring Boot (baseada no tutorial https://spring.io/guides/tutorials/
 
 Rode `ApiPapasApplication` no IntelliJ e acesse:
 
+- Front-end: http://localhost:8081/ (HTML, CSS e JavaScript puros em `src/main/resources/static`)
 - Swagger: http://localhost:8081/swagger-ui.html
 - Console do H2: http://localhost:8081/h2-console (JDBC URL: `jdbc:h2:mem:papasdb`, usuário `sa`, sem senha)
 

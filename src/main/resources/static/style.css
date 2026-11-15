@@ -1,0 +1,352 @@
+:root {
+    --fundo: #f6f5f2;
+    --superficie: #ffffff;
+    --texto: #1f2328;
+    --suave: #626872;
+    --borda: #dcdad4;
+    --primaria: #8a5a14;
+    --primaria-hover: #6f4810;
+    --primaria-texto: #ffffff;
+    --perigo: #b42318;
+    --ok-texto: #1e6b37;
+    --ok-fundo: #e7f4ea;
+    --erro-texto: #9f1c12;
+    --erro-fundo: #fbeae8;
+    --linha-alternada: #faf9f6;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --fundo: #16171a;
+        --superficie: #1f2125;
+        --texto: #e8e6e1;
+        --suave: #a2a6ad;
+        --borda: #34373d;
+        --primaria: #d9a548;
+        --primaria-hover: #e8b964;
+        --primaria-texto: #1a1408;
+        --perigo: #f27a6e;
+        --ok-texto: #8fd6a4;
+        --ok-fundo: #1d3326;
+        --erro-texto: #f6a59c;
+        --erro-fundo: #3a1f1c;
+        --linha-alternada: #23252a;
+    }
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    font-size: 15px;
+    background: var(--fundo);
+    color: var(--texto);
+}
+
+input, select, button {
+    font: inherit;
+    color: inherit;
+}
+
+input, select {
+    background: var(--superficie);
+    border: 1px solid var(--borda);
+    border-radius: 6px;
+    padding: 7px 9px;
+    min-width: 0;
+}
+
+input:focus, select:focus, button:focus-visible {
+    outline: 2px solid var(--primaria);
+    outline-offset: 1px;
+}
+
+button {
+    background: var(--superficie);
+    border: 1px solid var(--borda);
+    border-radius: 6px;
+    padding: 7px 14px;
+    cursor: pointer;
+}
+
+button:hover:not(:disabled) {
+    border-color: var(--suave);
+}
+
+button:disabled {
+    opacity: .5;
+    cursor: default;
+}
+
+button.primario {
+    background: var(--primaria);
+    border-color: var(--primaria);
+    color: var(--primaria-texto);
+}
+
+button.primario:hover:not(:disabled) {
+    background: var(--primaria-hover);
+}
+
+button.perigo {
+    color: var(--perigo);
+}
+
+/* ---------- topo ---------- */
+
+.topo {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px 24px;
+    padding: 14px 24px;
+    background: var(--superficie);
+    border-bottom: 1px solid var(--borda);
+}
+
+.topo h1 {
+    margin: 0;
+    font-size: 20px;
+    color: var(--primaria);
+}
+
+.chave {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    min-width: 260px;
+}
+
+.chave label {
+    color: var(--suave);
+    white-space: nowrap;
+}
+
+.chave input {
+    flex: 1;
+    max-width: 380px;
+}
+
+.link-swagger {
+    color: var(--primaria);
+}
+
+/* ---------- abas ---------- */
+
+.abas {
+    display: flex;
+    gap: 4px;
+    padding: 0 24px;
+    background: var(--superficie);
+    border-bottom: 1px solid var(--borda);
+    overflow-x: auto;
+}
+
+.abas button {
+    border: none;
+    border-bottom: 3px solid transparent;
+    border-radius: 0;
+    background: none;
+    padding: 12px 14px;
+    color: var(--suave);
+    white-space: nowrap;
+}
+
+.abas button[aria-selected="true"] {
+    color: var(--texto);
+    border-bottom-color: var(--primaria);
+    font-weight: 600;
+}
+
+/* ---------- conteúdo ---------- */
+
+main {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px 24px 40px;
+}
+
+.barra {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 14px;
+}
+
+.busca {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+
+.busca label {
+    color: var(--suave);
+}
+
+.mensagem {
+    padding: 10px 14px;
+    border-radius: 6px;
+    margin-bottom: 14px;
+    white-space: pre-line;
+}
+
+.mensagem.ok {
+    background: var(--ok-fundo);
+    color: var(--ok-texto);
+}
+
+.mensagem.erro {
+    background: var(--erro-fundo);
+    color: var(--erro-texto);
+}
+
+.tabela {
+    overflow-x: auto;
+    background: var(--superficie);
+    border: 1px solid var(--borda);
+    border-radius: 8px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th, td {
+    text-align: left;
+    padding: 9px 12px;
+    border-bottom: 1px solid var(--borda);
+    vertical-align: top;
+}
+
+th {
+    font-size: 13px;
+    color: var(--suave);
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+tbody tr:nth-child(even) {
+    background: var(--linha-alternada);
+}
+
+tbody tr:last-child td {
+    border-bottom: none;
+}
+
+td.acoes {
+    white-space: nowrap;
+    text-align: right;
+}
+
+td.acoes button {
+    padding: 4px 10px;
+    margin-left: 4px;
+}
+
+td.vazio {
+    text-align: center;
+    color: var(--suave);
+    padding: 28px;
+}
+
+.paginacao {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 14px;
+    margin-top: 14px;
+    color: var(--suave);
+}
+
+/* ---------- formulário ---------- */
+
+dialog {
+    width: min(520px, calc(100vw - 32px));
+    border: 1px solid var(--borda);
+    border-radius: 10px;
+    padding: 0;
+    background: var(--superficie);
+    color: var(--texto);
+}
+
+dialog::backdrop {
+    background: rgb(0 0 0 / .45);
+}
+
+dialog form {
+    padding: 20px 22px;
+}
+
+dialog h2 {
+    margin: 0 0 16px;
+    font-size: 18px;
+}
+
+.campo {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    margin-bottom: 13px;
+}
+
+.campo > label, .campo legend {
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.campo .opcional {
+    font-weight: 400;
+    color: var(--suave);
+}
+
+fieldset.campo {
+    border: 1px solid var(--borda);
+    border-radius: 6px;
+    padding: 8px 12px 10px;
+}
+
+.lista-papas {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 4px 12px;
+    max-height: 180px;
+    overflow-y: auto;
+}
+
+.lista-papas label {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    font-size: 14px;
+}
+
+.erro-campo {
+    color: var(--erro-texto);
+    font-size: 13px;
+}
+
+.acoes-form {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 6px;
+}
+
+@media (max-width: 600px) {
+    .topo, .abas, main {
+        padding-left: 16px;
+        padding-right: 16px;
+    }
+
+    .chave {
+        flex-basis: 100%;
+    }
+}

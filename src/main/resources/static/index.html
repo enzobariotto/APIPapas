@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>API de Papas</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="topo">
+    <h1>API de Papas</h1>
+    <div class="chave">
+        <label for="chave-api">Chave de API</label>
+        <input id="chave-api" type="password" autocomplete="off"
+               placeholder="Necessária para cadastrar, editar e excluir">
+    </div>
+    <a class="link-swagger" href="swagger-ui.html" target="_blank" rel="noopener">Swagger</a>
+</header>
+
+<nav id="abas" class="abas" role="tablist"></nav>
+
+<main>
+    <div class="barra">
+        <form id="busca" class="busca"></form>
+        <button id="novo" type="button" class="primario">+ Novo</button>
+    </div>
+
+    <div id="mensagem" class="mensagem" role="status" hidden></div>
+
+    <div class="tabela">
+        <table>
+            <thead></thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <div class="paginacao">
+        <button id="anterior" type="button">‹ Anterior</button>
+        <span id="info-pagina"></span>
+        <button id="proxima" type="button">Próxima ›</button>
+    </div>
+</main>
+
+<dialog id="dialogo">
+    <form id="formulario" novalidate>
+        <h2 id="titulo-form"></h2>
+        <div id="erro-form" class="mensagem erro" hidden></div>
+        <div id="campos"></div>
+        <div class="acoes-form">
+            <button type="button" id="cancelar">Cancelar</button>
+            <button type="submit" id="salvar" class="primario">Salvar</button>
+        </div>
+    </form>
+</dialog>
+
+<script src="app.js"></script>
+</body>
+</html>
