@@ -13,7 +13,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Set;
 
@@ -80,8 +79,14 @@ public class ApiKeyFilter extends OncePerRequestFilter {
         chain.doFilter(request, response);
     }
 
+    /**
+     * Caminho da requisição já normalizado pelo servidor: decodificado (%70 vira "p"), sem parâmetros de
+     * matriz (";x=1") e sem "//", "/./" ou "/../". Não usar getRequestURI(), que traz a URL crua: com ela,
+     * "POST /%70apas" passaria pelo filtro sem chave e o Spring ainda a encaminharia para /papas.
+     */
     public static String caminho(HttpServletRequest request) {
-        return request.getRequestURI().substring(request.getContextPath().length());
+        String pathInfo = request.getPathInfo();
+        return request.getServletPath() + (pathInfo != null ? pathInfo : "");
     }
 
     public static boolean ehRecurso(String caminho) {

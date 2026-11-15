@@ -8,7 +8,7 @@ Rode `ApiPapasApplication` no IntelliJ e acesse:
 
 - Front-end: http://localhost:8081/ (HTML, CSS e JavaScript puros em `src/main/resources/static`)
 - Swagger: http://localhost:8081/swagger-ui.html
-- Console do H2: http://localhost:8081/h2-console (JDBC URL: `jdbc:h2:mem:papasdb`, usuário `sa`, sem senha)
+- Console do H2: http://localhost:8081/h2-console (JDBC URL: `jdbc:h2:mem:papasdb`, usuário `sa`, sem senha). Fica **desligado por padrão**; para usar, defina a variável de ambiente `H2_CONSOLE=true` na configuração de execução do IntelliJ. Nunca ligue no Render: o console dá acesso direto ao banco, sem chave de API.
 
 ## Entidades e relacionamentos
 
