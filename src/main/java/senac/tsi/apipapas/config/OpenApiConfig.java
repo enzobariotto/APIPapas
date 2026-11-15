@@ -74,6 +74,8 @@ class OpenApiConfig {
                     }
                     ModelConverters.getInstance().readAll(ErroApi.class)
                             .forEach((nomeSchema, schema) -> openApi.getComponents().addSchemas(nomeSchema, schema));
+                    // Exemplo certo para cada status de cada endpoint (ver ExemplosOpenApi)
+                    ExemplosOpenApi.aplicar(openApi, versao);
                 })
                 .addOperationCustomizer(autenticacaoEIdempotencia())
                 .addOperationCustomizer((operation, handlerMethod) -> {
@@ -186,24 +188,22 @@ class OpenApiConfig {
                     .description("Valor único por operação (ex.: um UUID). Repetir a mesma chave com o mesmo corpo "
                             + "devolve a resposta original sem cadastrar de novo. A resposta fica guardada por 24 horas.")
                     .schema(new StringSchema().maxLength(100).example("3f2b8c1e-9d4a-4c6b-8e2f-1a7d5c9b0e34")));
-            adicionar(operation, "201", "Requisição repetida: devolve a resposta original, com o header "
-                    + IdempotenciaFilter.HEADER_REPETIDA + ": true");
             adicionar(operation, "400", "Header " + IdempotenciaFilter.HEADER + " ausente");
             adicionar(operation, "409", "Já existe uma requisição com esta chave de idempotência em processamento");
             adicionar(operation, "422", "A chave de idempotência já foi usada com uma requisição diferente");
         }
     }
 
-    /** Adiciona a resposta ou, se o status já estiver documentado, complementa a descrição existente. */
+    /**
+     * Adiciona a resposta, se o status ainda não estiver documentado. As descrições e os exemplos finais
+     * de cada status são definidos em ExemplosOpenApi.
+     */
     private static void adicionar(Operation operation, String status, String descricao) {
         if (operation.getResponses() == null) {
             operation.setResponses(new ApiResponses());
         }
-        ApiResponse existente = operation.getResponses().get(status);
-        if (existente == null) {
+        if (!operation.getResponses().containsKey(status)) {
             operation.getResponses().addApiResponse(status, new ApiResponse().description(descricao));
-        } else {
-            existente.setDescription(existente.getDescription() + "; ou: " + descricao);
         }
     }
 }
