@@ -1,5 +1,7 @@
 package senac.tsi.apipapas.seguranca;
 
+import io.github.bucket4j.Bucket;
+import io.github.bucket4j.ConsumptionProbe;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -17,15 +19,20 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * Limita a quantidade de requisições por cliente em uma janela de tempo fixa.
+ * Limita a quantidade de requisições por cliente com o algoritmo token bucket (biblioteca Bucket4j).
+ *
+ * Cada cliente tem um "balde" de fichas: cada requisição gasta uma ficha e, sem fichas, a API responde
+ * 429 Too Many Requests. As fichas voltam aos poucos (recarga gradual): com o limite de 30 por minuto,
+ * volta uma ficha a cada 2 segundos. Assim não há "virada de janela" em que o limite zera de uma vez.
  *
  * O cliente é identificado pela chave de API (quando o header X-API-Key traz uma chave válida) ou, sem chave,
- * pelo endereço IP. Clientes com chave têm um limite maior. Toda resposta traz os headers
- * X-RateLimit-Limit, X-RateLimit-Remaining e X-RateLimit-Reset; ao estourar o limite a API responde
- * 429 Too Many Requests com o header Retry-After (segundos até a janela reiniciar).
+ * pelo endereço IP. Clientes com chave têm um balde maior. Toda resposta traz os headers
+ * X-RateLimit-Limit (tamanho do balde), X-RateLimit-Remaining (fichas restantes) e X-RateLimit-Reset
+ * (segundos até o balde encher de novo); o 429 traz Retry-After (segundos até a próxima ficha).
  */
 @Component
 @Order(1)
@@ -43,20 +50,21 @@ public class RateLimitFilter extends OncePerRequestFilter {
     private final ChaveApiService chaveApiService;
     private final int limiteAnonimo;
     private final int limiteComChave;
-    private final long janelaMillis;
+    private final Duration periodo;
 
-    private final Map<String, Janela> janelas = new ConcurrentHashMap<>();
+    /** Um balde por cliente ("ip:...", "chave-{id}" ou "admin"). */
+    private final Map<String, Balde> baldes = new ConcurrentHashMap<>();
     private final AtomicLong contadorRequisicoes = new AtomicLong();
 
     RateLimitFilter(ChaveAdmin chaveAdmin, ChaveApiService chaveApiService,
-                    @Value("${app.rate-limit.limite-anonimo:60}") int limiteAnonimo,
-                    @Value("${app.rate-limit.limite-com-chave:120}") int limiteComChave,
-                    @Value("${app.rate-limit.janela:60s}") Duration janela) {
+                    @Value("${app.rate-limit.limite-anonimo:30}") int limiteAnonimo,
+                    @Value("${app.rate-limit.limite-com-chave:60}") int limiteComChave,
+                    @Value("${app.rate-limit.periodo:60s}") Duration periodo) {
         this.chaveAdmin = chaveAdmin;
         this.chaveApiService = chaveApiService;
         this.limiteAnonimo = limiteAnonimo;
         this.limiteComChave = limiteComChave;
-        this.janelaMillis = janela.toMillis();
+        this.periodo = periodo;
     }
 
     @Override
@@ -71,33 +79,34 @@ public class RateLimitFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
         String cliente = identificarCliente(request);
         int limite = cliente.startsWith("ip:") ? limiteAnonimo : limiteComChave;
-        long agora = System.currentTimeMillis();
 
-        long[] estado = new long[2]; // [quantidade na janela, início da janela]
-        janelas.compute(cliente, (k, janela) -> {
-            if (janela == null || agora - janela.inicio >= janelaMillis) {
-                janela = new Janela(agora);
-            }
-            janela.quantidade++;
-            estado[0] = janela.quantidade;
-            estado[1] = janela.inicio;
-            return janela;
-        });
-        limparJanelasExpiradas(agora);
+        Balde balde = baldes.computeIfAbsent(cliente, c -> new Balde(novoBucket(limite), limite));
+        ConsumptionProbe consumo = balde.bucket().tryConsumeAndReturnRemaining(1);
+        limparBaldesCheios();
 
-        long segundosParaReset = Math.max(1, (estado[1] + janelaMillis - agora + 999) / 1000);
         response.setHeader(HEADER_LIMITE, String.valueOf(limite));
-        response.setHeader(HEADER_RESTANTE, String.valueOf(Math.max(0, limite - estado[0])));
-        response.setHeader(HEADER_RESET, String.valueOf(segundosParaReset));
+        response.setHeader(HEADER_RESTANTE, String.valueOf(consumo.getRemainingTokens()));
+        response.setHeader(HEADER_RESET, String.valueOf(segundos(consumo.getNanosToWaitForReset())));
 
-        if (estado[0] > limite) {
-            response.setHeader(HttpHeaders.RETRY_AFTER, String.valueOf(segundosParaReset));
+        if (!consumo.isConsumed()) {
+            long espera = Math.max(1, segundos(consumo.getNanosToWaitForRefill()));
+            response.setHeader(HttpHeaders.RETRY_AFTER, String.valueOf(espera));
             ApiKeyFilter.erro(request, response, 429, "Limite de " + limite + " requisições por "
-                    + (janelaMillis / 1000) + " segundos excedido. Tente novamente em " + segundosParaReset
-                    + " segundos. Limites de uso: " + Documentacao.TERMOS_LIMITES);
+                    + descreverPeriodo() + " excedido. Tente novamente em " + espera
+                    + (espera == 1 ? " segundo" : " segundos") + ". Limites de uso: " + Documentacao.TERMOS_LIMITES);
             return;
         }
         chain.doFilter(request, response);
+    }
+
+    /**
+     * Balde com capacidade para "limite" fichas e recarga gradual (refillGreedy): as "limite" fichas do período
+     * voltam distribuídas ao longo dele, uma de cada vez, em vez de todas juntas no fim.
+     */
+    private Bucket novoBucket(int limite) {
+        return Bucket.builder()
+                .addLimit(regra -> regra.capacity(limite).refillGreedy(limite, periodo))
+                .build();
     }
 
     /** "chave-{id}" ou "admin" quando a chave de API é válida; caso contrário, "ip:{endereço}". */
@@ -116,18 +125,22 @@ public class RateLimitFilter extends OncePerRequestFilter {
         return "ip:" + request.getRemoteAddr();
     }
 
-    private void limparJanelasExpiradas(long agora) {
+    /** Um balde cheio é igual a um balde novo; remover os cheios evita guardar um balde para cada IP que já passou. */
+    private void limparBaldesCheios() {
         if (contadorRequisicoes.incrementAndGet() % LIMPAR_A_CADA == 0) {
-            janelas.values().removeIf(j -> agora - j.inicio >= janelaMillis);
+            baldes.values().removeIf(b -> b.bucket().getAvailableTokens() >= b.capacidade());
         }
     }
 
-    private static final class Janela {
-        final long inicio;
-        long quantidade;
+    private String descreverPeriodo() {
+        long s = periodo.toSeconds();
+        return s == 60 ? "minuto" : s + " segundos";
+    }
 
-        Janela(long inicio) {
-            this.inicio = inicio;
-        }
+    private static long segundos(long nanos) {
+        return (nanos + TimeUnit.SECONDS.toNanos(1) - 1) / TimeUnit.SECONDS.toNanos(1);
+    }
+
+    private record Balde(Bucket bucket, int capacidade) {
     }
 }

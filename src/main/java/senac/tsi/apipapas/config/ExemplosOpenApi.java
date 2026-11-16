@@ -149,10 +149,10 @@ final class ExemplosOpenApi {
                 .schema(new Schema<>().$ref("#/components/schemas/ErroApi"))
                 .examples(mapa)));
         if (status.equals("429")) {
-            resposta.addHeaderObject("Retry-After", header("Segundos até poder fazer novas requisições", new IntegerSchema().example(42)));
-            resposta.addHeaderObject(RateLimitFilter.HEADER_LIMITE, header("Limite de requisições por minuto: 60 sem chave, 120 com chave", new IntegerSchema().example(60)));
-            resposta.addHeaderObject(RateLimitFilter.HEADER_RESTANTE, header("Requisições restantes na janela atual", new IntegerSchema().example(0)));
-            resposta.addHeaderObject(RateLimitFilter.HEADER_RESET, header("Segundos até a janela reiniciar", new IntegerSchema().example(42)));
+            resposta.addHeaderObject("Retry-After", header("Segundos até a próxima requisição ser liberada", new IntegerSchema().example(2)));
+            resposta.addHeaderObject(RateLimitFilter.HEADER_LIMITE, header("Limite de requisições por minuto: 30 sem chave, 60 com chave", new IntegerSchema().example(30)));
+            resposta.addHeaderObject(RateLimitFilter.HEADER_RESTANTE, header("Requisições disponíveis agora", new IntegerSchema().example(0)));
+            resposta.addHeaderObject(RateLimitFilter.HEADER_RESET, header("Segundos até o limite ser totalmente restaurado", new IntegerSchema().example(60)));
         }
     }
 
@@ -415,7 +415,7 @@ final class ExemplosOpenApi {
             case 422 -> lista.add(erro("reutilizada", IdempotenciaFilter.HEADER + " já usada com outro corpo", 422,
                     "A chave " + IdempotenciaFilter.HEADER + " informada já foi usada com uma requisição diferente.", e.caminho, null));
             case 429 -> lista.add(erro("limite", "limite de requisições excedido", 429,
-                    "Limite de 60 requisições por 60 segundos excedido. Tente novamente em 42 segundos. Limites de uso: "
+                    "Limite de 30 requisições por minuto excedido. Tente novamente em 2 segundos. Limites de uso: "
                             + Documentacao.TERMOS_LIMITES, e.concreto("6"), null));
             default -> {
             }

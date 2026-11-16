@@ -97,17 +97,17 @@ As respostas de erro não são guardadas: dá para corrigir os dados e tentar de
 
 ## Rate limiting
 
-Cada cliente tem um limite de requisições por janela de tempo. O cliente é identificado pela chave de API (se o `X-API-Key` for válido) ou, sem chave, pelo IP.
+Usa o algoritmo **token bucket**, com a biblioteca [Bucket4j](https://bucket4j.com/). Cada cliente tem um "balde" de fichas: cada requisição gasta uma ficha e, sem fichas, a API responde 429. As fichas voltam **aos poucos** (recarga gradual), e não todas de uma vez no fim de um minuto. O cliente é identificado pela chave de API (se o `X-API-Key` for válido) ou, sem chave, pelo IP.
 
-| Cliente | Limite padrão |
-|---|---|
-| Sem chave (por IP) | 60 requisições por minuto |
-| Com chave de API | 120 requisições por minuto |
+| Cliente | Tamanho do balde | Recarga |
+|---|---|---|
+| Sem chave (por IP) | 30 requisições | 1 ficha a cada 2 segundos (30 por minuto) |
+| Com chave de API | 60 requisições | 1 ficha por segundo (60 por minuto) |
 
-- Toda resposta traz `X-RateLimit-Limit` (limite), `X-RateLimit-Remaining` (quanto ainda resta) e `X-RateLimit-Reset` (segundos até a janela reiniciar).
-- Ao passar do limite a API responde **`429 Too Many Requests`** com o header **`Retry-After`** (segundos para tentar de novo).
+- Toda resposta traz `X-RateLimit-Limit` (tamanho do balde), `X-RateLimit-Remaining` (fichas disponíveis agora) e `X-RateLimit-Reset` (segundos até o balde encher de novo).
+- Ao passar do limite a API responde **`429 Too Many Requests`** com o header **`Retry-After`** (segundos até a próxima ficha).
 - Swagger, `/v3/api-docs` e console do H2 ficam fora do limite.
-- Configurável pelas variáveis `RATE_LIMIT_ANONIMO`, `RATE_LIMIT_COM_CHAVE` e `RATE_LIMIT_JANELA` (ex.: `60s`).
+- Configurável pelas variáveis `RATE_LIMIT_ANONIMO`, `RATE_LIMIT_COM_CHAVE` e `RATE_LIMIT_PERIODO` (ex.: `60s`).
 
 ## CORS
 

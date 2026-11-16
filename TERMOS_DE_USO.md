@@ -53,13 +53,17 @@ requisições de cada cliente (*rate limiting*):
 
 | Cliente | Identificado por | Limite atual |
 |---|---|---|
-| Sem chave de API | Endereço IP | 60 requisições por minuto |
-| Com chave de API | Chave | 120 requisições por minuto |
+| Sem chave de API | Endereço IP | 30 requisições por minuto |
+| Com chave de API | Chave | 60 requisições por minuto |
+
+O limite funciona como um saldo que se recupera aos poucos: cada requisição
+consome uma unidade e o saldo volta gradualmente ao longo do minuto (uma
+unidade a cada 2 segundos sem chave, ou a cada segundo com chave).
 
 1. Toda resposta informa o limite e o consumo nos headers
-   `X-RateLimit-Limit` (limite da janela), `X-RateLimit-Remaining`
-   (requisições restantes) e `X-RateLimit-Reset` (segundos até a janela
-   reiniciar).
+   `X-RateLimit-Limit` (limite), `X-RateLimit-Remaining` (requisições
+   disponíveis agora) e `X-RateLimit-Reset` (segundos até o saldo ser
+   totalmente restaurado).
 2. Ao passar do limite, a API responde **`429 Too Many Requests`** com o header
    **`Retry-After`**, que indica quantos segundos esperar. Aplicações clientes
    devem respeitar esse tempo antes de tentar novamente, em vez de repetir a
@@ -127,7 +131,8 @@ no bloqueio do acesso e na remoção do conteúdo enviado, sem aviso prévio.
    - o **nome informado** na geração de cada chave de API e as datas de
      criação, último uso e revogação da chave;
    - o **endereço IP** de quem faz requisições sem chave, mantido somente em
-     memória e apenas durante a janela do [limite de uso](#4-limites-de-uso);
+     memória e apenas enquanto o [limite de uso](#4-limites-de-uso) não é
+     totalmente restaurado;
    - a **resposta de cada cadastro** por 24 horas, para a proteção contra
      requisições repetidas ([seção 5](#5-cadastros-e-requisições-repetidas)).
 2. O provedor de hospedagem pode registrar informações técnicas das
