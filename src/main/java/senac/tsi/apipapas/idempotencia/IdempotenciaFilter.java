@@ -22,6 +22,10 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
 
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.SerializationFeature;
+import tools.jackson.databind.json.JsonMapper;
+
 /**
  * Idempotência nos POSTs dos recursos (papas, conclaves, encíclicas, concílios e santos).
  *
@@ -29,7 +33,8 @@ import java.util.Optional;
  * - primeira vez: a requisição é processada e a resposta de sucesso fica guardada por 24 horas;
  * - repetição com a mesma chave e o mesmo corpo: a resposta guardada é devolvida sem processar de novo
  *   (com o header Idempotency-Replayed: true);
- * - mesma chave com outro corpo: 422;
+ * - mesma chave com outro corpo: 422 (o corpo é comparado pelo conteúdo do JSON: espaços, quebras de linha e
+ *   ordem dos campos não contam);
  * - mesma chave enquanto a primeira requisição ainda está em processamento: 409.
  * Respostas de erro não são guardadas, então o cliente pode corrigir os dados e tentar de novo com a mesma chave.
  * Roda depois do ApiKeyFilter, para que cada cliente tenha o seu próprio espaço de chaves.
@@ -42,6 +47,10 @@ public class IdempotenciaFilter extends OncePerRequestFilter {
     public static final String HEADER_REPETIDA = "Idempotency-Replayed";
     private static final int TAMANHO_MAXIMO_CHAVE = 100;
     private static final Duration VALIDADE = Duration.ofHours(24);
+    /** Reescreve o JSON numa forma única (campos em ordem alfabética, sem espaços) antes de calcular o hash. */
+    private static final JsonMapper JSON_CANONICO = JsonMapper.builder()
+            .enable(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS)
+            .build();
 
     private final RegistroIdempotenciaRepository repository;
 
@@ -129,8 +138,17 @@ public class IdempotenciaFilter extends OncePerRequestFilter {
     private static String hashRequisicao(CorpoEmCacheRequest request) throws IOException {
         ByteArrayOutputStream dados = new ByteArrayOutputStream();
         dados.write((request.getMethod() + " " + request.getRequestURI() + "\n").getBytes(StandardCharsets.UTF_8));
-        dados.write(request.getCorpo());
+        dados.write(corpoCanonico(request.getCorpo()));
         return GeradorChave.sha256(dados.toByteArray());
+    }
+
+    /** Mesmo JSON escrito de outro jeito gera os mesmos bytes; se não for JSON válido, usa o corpo como veio. */
+    private static byte[] corpoCanonico(byte[] corpo) {
+        try {
+            return JSON_CANONICO.writeValueAsBytes(JSON_CANONICO.readValue(corpo, Object.class));
+        } catch (JacksonException e) {
+            return corpo;
+        }
     }
 
     private static void repetirResposta(RegistroIdempotencia registro, HttpServletResponse response) throws IOException {

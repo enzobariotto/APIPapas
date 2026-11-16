@@ -5,6 +5,7 @@ import senac.tsi.apipapas.model.Concilio;
 import senac.tsi.apipapas.model.Papa;
 import senac.tsi.apipapas.repository.ConcilioRepository;
 import senac.tsi.apipapas.repository.PapaRepository;
+import senac.tsi.apipapas.validacao.RegrasHistoricas;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -36,9 +37,11 @@ public class ConcilioController {
     private final ConcilioRepository repository;
     private final PapaRepository papaRepository;
     private final PagedResourcesAssembler<Concilio> pagedAssembler;
+    private final RegrasHistoricas regras;
 
     ConcilioController(ConcilioRepository repository, PapaRepository papaRepository,
-                       PagedResourcesAssembler<Concilio> pagedAssembler) {
+                       PagedResourcesAssembler<Concilio> pagedAssembler, RegrasHistoricas regras) {
+        this.regras = regras;
         this.repository = repository;
         this.papaRepository = papaRepository;
         this.pagedAssembler = pagedAssembler;
@@ -66,7 +69,7 @@ public class ConcilioController {
     }
 
     @Operation(summary = "Cadastra um concílio",
-            description = "Informe pelo menos um papa pelo id, por exemplo `\"papas\": [{\"id\": 2}, {\"id\": 3}]`. A data de encerramento não pode ser anterior à de início.")
+            description = "Informe pelo menos um papa pelo id, por exemplo `\"papas\": [{\"id\": 2}, {\"id\": 3}]`. A data de encerramento não pode ser anterior à de início, e cada papa informado precisa ter sido papa durante o concílio.")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Concílio cadastrado"),
             @ApiResponse(responseCode = "400", description = "Dados inválidos", content = @Content),
@@ -76,6 +79,7 @@ public class ConcilioController {
     public ResponseEntity<EntityModel<Concilio>> criar(@Valid @RequestBody Concilio novoConcilio) {
         novoConcilio.setId(null);
         novoConcilio.setPapas(buscarPapas(novoConcilio.getPapas()));
+        regras.validarConcilio(novoConcilio, novoConcilio.getPapas());
         Concilio salvo = repository.save(novoConcilio);
         return ResponseEntity.created(linkTo(methodOn(ConcilioController.class).buscar(salvo.getId())).toUri())
                 .body(toModel(salvo));
@@ -96,6 +100,7 @@ public class ConcilioController {
         concilio.setDataInicio(dados.getDataInicio());
         concilio.setDataFim(dados.getDataFim());
         concilio.setPapas(buscarPapas(dados.getPapas()));
+        regras.validarConcilio(concilio, concilio.getPapas());
         return toModel(repository.save(concilio));
     }
 

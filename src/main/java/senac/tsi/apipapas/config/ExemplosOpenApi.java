@@ -337,6 +337,12 @@ final class ExemplosOpenApi {
                             "JSON malformado. Verifique a sintaxe do corpo da requisição (aspas, vírgulas e chaves).",
                             e.concreto(idDoExemplo(e)), null));
                 }
+                if (comCorpo) {
+                    Exemplo historico = foraDoPontificado(e);
+                    if (historico != null) {
+                        lista.add(historico);
+                    }
+                }
                 if (e.metodo == PathItem.HttpMethod.POST && !chaves) {
                     lista.add(erro("idempotencia", "header " + IdempotenciaFilter.HEADER + " ausente", 400,
                             "O header " + IdempotenciaFilter.HEADER + " é obrigatório em requisições POST.", e.caminho, null));
@@ -395,12 +401,31 @@ final class ExemplosOpenApi {
                     lista.add(erro("papa", "o papa informado não existe", 404,
                             "Não foi encontrado(a) papa com id 99", e.concreto(idDoExemplo(e)), null));
                 }
+                if (e.caminho.equals("/enciclicas/papa/{papaId}")) {
+                    lista.add(erro("papa", "o papa informado não existe", 404,
+                            "Não foi encontrado(a) papa com id 99", "/enciclicas/papa/99", null));
+                }
             }
             case 409 -> {
                 if (e.metodo == PathItem.HttpMethod.DELETE) {
                     lista.add(erro("vinculado", "existem registros vinculados", 409,
                             "Operação não permitida: existem registros vinculados a este recurso. "
                                     + "Exclua ou altere os registros vinculados antes.", caminho, null));
+                }
+                if (comCorpo && e.recurso.equals("papas")) {
+                    String repetido = "Já existe um papa com o número de ordem 266: Francisco.";
+                    lista.add(erro("numero-repetido", "número de ordem já usado por outro papa", 409, repetido,
+                            e.concreto(idDoExemplo(e)), Map.of("numeroOrdem", repetido)));
+                    String coincide = "O pontificado informado (2020-01-01 a 2021-01-01) coincide com o de Francisco "
+                            + "(2013-03-13 a 2025-04-21). Não pode haver dois papas ao mesmo tempo.";
+                    lista.add(erro("pontificado-coincidente", "pontificado ao mesmo tempo que o de outro papa", 409, coincide,
+                            e.concreto(idDoExemplo(e)), Map.of("inicioPontificado", coincide)));
+                    if (e.metodo == PathItem.HttpMethod.PUT) {
+                        String ligado = "A encíclica Laudato Si' (2015-05-24) ficaria fora do novo pontificado "
+                                + "(2013-03-13 a 2014-12-31). Altere ou exclua esse registro antes.";
+                        lista.add(erro("registro-ligado", "registros ligados ao papa ficariam fora do novo pontificado", 409,
+                                ligado, e.concreto(idDoExemplo(e)), Map.of("inicioPontificado", ligado)));
+                    }
                 }
                 if (comCorpo && e.recurso.equals("conclaves")) {
                     lista.add(erro("duplicado", "o papa informado já possui um conclave", 409,
@@ -421,6 +446,26 @@ final class ExemplosOpenApi {
             }
         }
         return lista;
+    }
+
+    /** 400 das regras históricas: a data precisa combinar com o pontificado do papa ligado ao registro. */
+    private static Exemplo foraDoPontificado(Endpoint e) {
+        String caminho = e.concreto(idDoExemplo(e));
+        return switch (e.recurso) {
+            case "enciclicas" -> erro("fora-do-pontificado", "data fora do pontificado do papa", 400,
+                    "Dados inválidos. Corrija os campos indicados.", caminho, Map.of("dataPublicacao",
+                            "A data de publicação (1990-01-01) precisa estar dentro do pontificado de Francisco (2013-03-13 a 2025-04-21)"));
+            case "santos" -> erro("fora-do-pontificado", "data fora do pontificado do papa", 400,
+                    "Dados inválidos. Corrija os campos indicados.", caminho, Map.of("dataCanonizacao",
+                            "A data de canonização (1990-01-01) precisa estar dentro do pontificado de Francisco (2013-03-13 a 2025-04-21)"));
+            case "conclaves" -> erro("fora-do-pontificado", "conclave não combina com o início do pontificado", 400,
+                    "Dados inválidos. Corrija os campos indicados.", caminho, Map.of("dataFim",
+                            "O conclave deve terminar no dia em que começa o pontificado de Paulo VI (1963-06-21) ou até 30 dias antes"));
+            case "concilios" -> erro("fora-do-pontificado", "papa que não era papa durante o concílio", 400,
+                    "Dados inválidos. Corrija os campos indicados.", caminho, Map.of("papas[1]",
+                            "Francisco (2013-03-13 a 2025-04-21) não era papa durante o concílio (1962-10-11 a 1965-12-08)"));
+            default -> null;
+        };
     }
 
     /** Id do registro mostrado nos exemplos (o mesmo do corpo de sucesso, do header Location e dos PUT). */

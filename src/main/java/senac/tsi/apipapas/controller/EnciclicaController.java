@@ -5,6 +5,7 @@ import senac.tsi.apipapas.model.Enciclica;
 import senac.tsi.apipapas.model.Papa;
 import senac.tsi.apipapas.repository.EnciclicaRepository;
 import senac.tsi.apipapas.repository.PapaRepository;
+import senac.tsi.apipapas.validacao.RegrasHistoricas;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -32,12 +33,14 @@ public class EnciclicaController {
     private final EnciclicaRepository repository;
     private final PapaRepository papaRepository;
     private final PagedResourcesAssembler<Enciclica> pagedAssembler;
+    private final RegrasHistoricas regras;
 
     EnciclicaController(EnciclicaRepository repository, PapaRepository papaRepository,
-                        PagedResourcesAssembler<Enciclica> pagedAssembler) {
+                        PagedResourcesAssembler<Enciclica> pagedAssembler, RegrasHistoricas regras) {
         this.repository = repository;
         this.papaRepository = papaRepository;
         this.pagedAssembler = pagedAssembler;
+        this.regras = regras;
     }
 
     @Operation(summary = "Lista as encíclicas",
@@ -62,7 +65,7 @@ public class EnciclicaController {
     }
 
     @Operation(summary = "Cadastra uma encíclica",
-            description = "O título em latim, a data de publicação e o papa são obrigatórios; o título em português é opcional. Informe o papa pelo id, por exemplo `\"papa\": {\"id\": 6}`.")
+            description = "O título em latim, a data de publicação e o papa são obrigatórios; o título em português é opcional. Informe o papa pelo id, por exemplo `\"papa\": {\"id\": 6}`. A data de publicação precisa estar dentro do pontificado do papa.")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Encíclica cadastrada"),
             @ApiResponse(responseCode = "400", description = "Dados inválidos", content = @Content),
@@ -72,6 +75,8 @@ public class EnciclicaController {
     public ResponseEntity<EntityModel<Enciclica>> criar(@Valid @RequestBody Enciclica novaEnciclica) {
         novaEnciclica.setId(null);
         novaEnciclica.setPapa(buscarPapa(novaEnciclica.getPapa().getId()));
+        regras.validarDentroDoPontificado(novaEnciclica.getPapa(), novaEnciclica.getDataPublicacao(),
+                "dataPublicacao", "A data de publicação");
         Enciclica salva = repository.save(novaEnciclica);
         return ResponseEntity.created(linkTo(methodOn(EnciclicaController.class).buscar(salva.getId())).toUri())
                 .body(toModel(salva));
@@ -91,6 +96,8 @@ public class EnciclicaController {
         enciclica.setTituloPortugues(dados.getTituloPortugues());
         enciclica.setDataPublicacao(dados.getDataPublicacao());
         enciclica.setPapa(buscarPapa(dados.getPapa().getId()));
+        regras.validarDentroDoPontificado(enciclica.getPapa(), enciclica.getDataPublicacao(),
+                "dataPublicacao", "A data de publicação");
         return toModel(repository.save(enciclica));
     }
 
@@ -109,11 +116,15 @@ public class EnciclicaController {
     @Operation(summary = "Lista as encíclicas de um papa",
             description = "Consulta personalizada: encíclicas escritas pelo papa informado. É o destino do link `enciclicas` de cada papa. Ex.: /enciclicas/papa/6.")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Lista paginada de encíclicas do papa")
+            @ApiResponse(responseCode = "200", description = "Lista paginada de encíclicas do papa"),
+            @ApiResponse(responseCode = "404", description = "Papa não encontrado", content = @Content)
     })
     @GetMapping("/papa/{papaId}")
     public PagedModel<EntityModel<Enciclica>> buscarPorPapa(@Parameter(description = "Id do papa", example = "6") @PathVariable Long papaId,
                                                             @ParameterObject Pageable pageable) {
+        if (!papaRepository.existsById(papaId)) {
+            throw new RecursoNaoEncontradoException("papa", papaId);
+        }
         return pagedAssembler.toModel(repository.findByPapaId(papaId, pageable), this::toModel);
     }
 

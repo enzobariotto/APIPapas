@@ -5,6 +5,8 @@ import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;
 import io.swagger.v3.oas.annotations.security.SecurityScheme;
 import io.swagger.v3.core.converter.ModelConverters;
 import io.swagger.v3.oas.models.Components;
+import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.Paths;
 import io.swagger.v3.oas.models.Operation;
 import io.swagger.v3.oas.models.info.Contact;
 import io.swagger.v3.oas.models.info.Info;
@@ -32,6 +34,9 @@ import senac.tsi.apipapas.idempotencia.IdempotenciaFilter;
 import senac.tsi.apipapas.seguranca.ApiKeyFilter;
 
 import java.lang.reflect.Method;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Configuração da documentação Swagger/OpenAPI:
@@ -76,6 +81,7 @@ class OpenApiConfig {
                             .forEach((nomeSchema, schema) -> openApi.getComponents().addSchemas(nomeSchema, schema));
                     // Exemplo certo para cada status de cada endpoint (ver ExemplosOpenApi)
                     ExemplosOpenApi.aplicar(openApi, versao);
+                    ordenar(openApi);
                 })
                 .addOperationCustomizer(autenticacaoEIdempotencia())
                 .addOperationCustomizer((operation, handlerMethod) -> {
@@ -91,6 +97,34 @@ class OpenApiConfig {
                     return operation;
                 })
                 .build();
+    }
+
+    /** Ordem das seções no Swagger UI: o recurso central primeiro e a administração por último. */
+    private static final List<String> ORDEM_DAS_SECOES =
+            List.of("Papas", "Conclaves", "Encíclicas", "Concílios", "Santos", "Chaves de API");
+
+    /**
+     * Seções na ordem de ORDEM_DAS_SECOES e, dentro de cada uma, a coleção antes das consultas e do registro
+     * individual (/papas, /papas/situacao/{situacao}, /papas/{id}). Sem isso, a ordem muda a cada inicialização.
+     */
+    private static void ordenar(OpenAPI openApi) {
+        if (openApi.getTags() != null) {
+            openApi.setTags(openApi.getTags().stream()
+                    .sorted(Comparator.comparingInt(tag -> posicao(tag.getName())))
+                    .toList());
+        }
+        if (openApi.getPaths() != null) {
+            Paths ordenados = new Paths();
+            openApi.getPaths().entrySet().stream()
+                    .sorted(Map.Entry.comparingByKey())
+                    .forEach(e -> ordenados.addPathItem(e.getKey(), e.getValue()));
+            openApi.setPaths(ordenados);
+        }
+    }
+
+    private static int posicao(String secao) {
+        int i = ORDEM_DAS_SECOES.indexOf(secao);
+        return i < 0 ? ORDEM_DAS_SECOES.size() : i;
     }
 
     private static boolean atendeVersao(Method metodo, String versao) {

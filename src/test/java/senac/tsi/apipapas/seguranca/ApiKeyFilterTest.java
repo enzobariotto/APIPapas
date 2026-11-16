@@ -33,7 +33,8 @@ class ApiKeyFilterTest {
 
     private static final String PAPA_VALIDO = """
             {"nomePapal": "Teste", "nomeBatismo": "Fulano de Tal", "numeroOrdem": 999,
-             "paisNascimento": "Brasil", "inicioPontificado": "2020-01-01", "situacao": "EM_EXERCICIO"}
+             "paisNascimento": "Brasil", "inicioPontificado": "1900-01-01", "fimPontificado": "1900-12-31",
+             "situacao": "FALECIMENTO"}
             """;
 
     @LocalServerPort

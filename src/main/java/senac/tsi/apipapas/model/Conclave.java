@@ -19,24 +19,24 @@ public class Conclave {
 
     @NotNull(message = "A data de início é obrigatória")
     @PastOrPresent(message = "A data de início não pode estar no futuro")
-    @Schema(example = "2013-03-12")
+    @Schema(example = "1963-06-19")
     private LocalDate dataInicio;
 
     @NotNull(message = "A data de término é obrigatória")
     @PastOrPresent(message = "A data de término não pode estar no futuro")
-    @Schema(example = "2013-03-13")
+    @Schema(description = "Dia em que o papa foi eleito: o início do pontificado dele ou até 30 dias antes", example = "1963-06-21")
     private LocalDate dataFim;
 
     @NotNull(message = "O número de cardeais é obrigatório")
     @Min(value = 1, message = "Deve haver pelo menos 1 cardeal")
     @Max(value = 300, message = "O número de cardeais deve ser no máximo 300")
-    @Schema(description = "Cardeais com direito a voto", example = "115")
+    @Schema(description = "Cardeais com direito a voto", example = "80")
     private Integer numeroCardeais;
 
     @NotNull(message = "O número de escrutínios é obrigatório")
     @Min(value = 1, message = "Deve haver pelo menos 1 escrutínio")
     @Max(value = 1000, message = "O número de escrutínios deve ser no máximo 1000")
-    @Schema(description = "Quantidade de votações até a eleição", example = "5")
+    @Schema(description = "Quantidade de votações até a eleição", example = "6")
     private Integer numeroEscrutinios;
 
     @OneToOne

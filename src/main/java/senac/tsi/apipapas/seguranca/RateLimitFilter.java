@@ -3,6 +3,8 @@ package senac.tsi.apipapas.seguranca;
 import io.github.bucket4j.Bucket;
 import io.github.bucket4j.ConsumptionProbe;
 import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletRequestWrapper;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -30,7 +32,12 @@ import java.util.concurrent.atomic.AtomicLong;
  * volta uma ficha a cada 2 segundos. Assim não há "virada de janela" em que o limite zera de uma vez.
  *
  * O cliente é identificado pela chave de API (quando o header X-API-Key traz uma chave válida) ou, sem chave,
- * pelo endereço IP. Clientes com chave têm um balde maior. Toda resposta traz os headers
+ * pelo endereço IP. Clientes com chave têm um balde maior.
+ *
+ * O IP nunca vem do header X-Forwarded-For, porque o cliente pode escrever nele o que quiser (e o proxy do Render
+ * só acrescenta o IP verdadeiro no fim da lista): trocando o valor a cada requisição, ele ganharia um balde novo
+ * a cada vez. No Render, o IP vem do header CF-Connecting-IP, que o Cloudflare (na frente do Render) sempre
+ * sobrescreve com o IP real; fora dele, vem da própria conexão. Toda resposta traz os headers
  * X-RateLimit-Limit (tamanho do balde), X-RateLimit-Remaining (fichas restantes) e X-RateLimit-Reset
  * (segundos até o balde encher de novo); o 429 traz Retry-After (segundos até a próxima ficha).
  */
@@ -41,6 +48,8 @@ public class RateLimitFilter extends OncePerRequestFilter {
     public static final String HEADER_LIMITE = "X-RateLimit-Limit";
     public static final String HEADER_RESTANTE = "X-RateLimit-Remaining";
     public static final String HEADER_RESET = "X-RateLimit-Reset";
+    /** Header que o Cloudflare preenche com o IP real do cliente (o cliente não consegue alterá-lo). */
+    static final String HEADER_IP_CLOUDFLARE = "CF-Connecting-IP";
 
     /** Caminhos fora do limite: documentação e console do banco (o Swagger UI carrega vários arquivos de uma vez). */
     private static final List<String> IGNORADOS = List.of("/swagger-ui", "/v3/api-docs", "/h2-console", "/favicon.ico", "/error");
@@ -51,6 +60,8 @@ public class RateLimitFilter extends OncePerRequestFilter {
     private final int limiteAnonimo;
     private final int limiteComChave;
     private final Duration periodo;
+    /** Header com o IP real do cliente, preenchido pelo proxy (vazio: usa o IP da conexão). */
+    private final String headerIp;
 
     /** Um balde por cliente ("ip:...", "chave-{id}" ou "admin"). */
     private final Map<String, Balde> baldes = new ConcurrentHashMap<>();
@@ -59,12 +70,14 @@ public class RateLimitFilter extends OncePerRequestFilter {
     RateLimitFilter(ChaveAdmin chaveAdmin, ChaveApiService chaveApiService,
                     @Value("${app.rate-limit.limite-anonimo:30}") int limiteAnonimo,
                     @Value("${app.rate-limit.limite-com-chave:60}") int limiteComChave,
-                    @Value("${app.rate-limit.periodo:60s}") Duration periodo) {
+                    @Value("${app.rate-limit.periodo:60s}") Duration periodo,
+                    @Value("${app.rate-limit.header-ip:}") String headerIp) {
         this.chaveAdmin = chaveAdmin;
         this.chaveApiService = chaveApiService;
         this.limiteAnonimo = limiteAnonimo;
         this.limiteComChave = limiteComChave;
         this.periodo = periodo;
+        this.headerIp = headerIp.isBlank() && "true".equals(System.getenv("RENDER")) ? HEADER_IP_CLOUDFLARE : headerIp.strip();
     }
 
     @Override
@@ -121,8 +134,23 @@ public class RateLimitFilter extends OncePerRequestFilter {
                 return "chave-" + chaveApi.get().getId();
             }
         }
-        // Com server.forward-headers-strategy=framework, getRemoteAddr() já considera o X-Forwarded-For do Render.
-        return "ip:" + request.getRemoteAddr();
+        return "ip:" + ipDoCliente(request);
+    }
+
+    private String ipDoCliente(HttpServletRequest request) {
+        if (!headerIp.isEmpty()) {
+            String ip = request.getHeader(headerIp);
+            if (ip != null && !ip.isBlank()) {
+                return ip.split(",")[0].strip();
+            }
+        }
+        // Com server.forward-headers-strategy=framework, request.getRemoteAddr() traria o primeiro IP do
+        // X-Forwarded-For, que o cliente controla. A requisição original (sem o filtro) tem o IP da conexão.
+        ServletRequest original = request;
+        while (original instanceof ServletRequestWrapper embrulho) {
+            original = embrulho.getRequest();
+        }
+        return original.getRemoteAddr();
     }
 
     /** Um balde cheio é igual a um balde novo; remover os cheios evita guardar um balde para cada IP que já passou. */

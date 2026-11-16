@@ -183,6 +183,11 @@ class ApiExceptionHandler {
 
     // ------------------------------------------------------------------ 409
 
+    @ExceptionHandler(ConflitoException.class)
+    ResponseEntity<ErroApi> conflitoDeNegocio(ConflitoException ex, HttpServletRequest request) {
+        return resposta(HttpStatus.CONFLICT, ex.getMessage(), request, Map.of(ex.getCampo(), ex.getMessage()));
+    }
+
     @ExceptionHandler(DataIntegrityViolationException.class)
     ResponseEntity<ErroApi> conflito(DataIntegrityViolationException ex, HttpServletRequest request) {
         ConstraintKind tipo = ex.getCause() instanceof org.hibernate.exception.ConstraintViolationException cv

@@ -36,7 +36,7 @@ Cada entidade tem: `GET` (lista paginada), `GET /{id}`, `POST`, `PUT /{id}`, `DE
 
 Paginação: `?page=0&size=5&sort=nome`
 
-Status: 200 (ok), 201 (criado), 204 (excluído), 400 (dados inválidos), 401 (sem chave de API ou chave inválida), 403 (não é admin), 404 (não encontrado), 405 (método não permitido), 409 (registro vinculado / duplicado / requisição idempotente em processamento), 415 (corpo que não é JSON), 422 (chave de idempotência reutilizada com outro corpo), 429 (limite de requisições), 500 (erro inesperado).
+Status: 200 (ok), 201 (criado), 204 (excluído), 400 (dados inválidos), 401 (sem chave de API ou chave inválida), 403 (não é admin), 404 (não encontrado), 405 (método não permitido), 409 (registro vinculado / duplicado / número de ordem repetido / dois papas ao mesmo tempo / requisição idempotente em processamento), 415 (corpo que não é JSON), 422 (chave de idempotência reutilizada com outro corpo), 429 (limite de requisições), 500 (erro inesperado).
 
 ## Validações e erros
 
@@ -46,6 +46,20 @@ Os dados de entrada são validados com Bean Validation (`@NotBlank`, `@NotNull`,
 |---|---|
 | `@PeriodoValido` | A data de fim não pode ser anterior à de início (papa, conclave e concílio) |
 | `@PontificadoConsistente` | Papa `EM_EXERCICIO` não tem data de fim; `RENUNCIA` e `FALECIMENTO` precisam ter |
+
+Regras de coerência histórica (`RegrasHistoricas`), que dependem dos registros já cadastrados:
+
+| Regra | Resposta |
+|---|---|
+| O número de ordem não se repete | `409` |
+| Dois pontificados não coincidem (o papa em exercício conta até hoje) | `409` |
+| A encíclica é publicada durante o pontificado do papa | `400` |
+| A canonização acontece durante o pontificado do papa que canonizou | `400` |
+| O conclave termina no dia em que começa o pontificado do papa eleito (ou até 30 dias antes) | `400` |
+| Cada papa de um concílio era papa durante o concílio | `400` |
+| Ao alterar um papa, encíclicas, canonizações, conclave e concílios ligados a ele continuam dentro do novo pontificado | `409` |
+
+Na leitura do JSON, os textos chegam sem espaços nas pontas e número decimal em campo inteiro (`"numeroOrdem": 1.5`) é recusado com `400`, em vez de ser arredondado.
 
 O `ApiExceptionHandler` (`@RestControllerAdvice`) trata as exceções e todos os erros, inclusive os dos filtros (chave de API, idempotência e rate limiting), saem no mesmo formato:
 
@@ -63,7 +77,7 @@ O `ApiExceptionHandler` (`@RestControllerAdvice`) trata as exceções e todos os
 }
 ```
 
-Exemplos tratados: campos obrigatórios ou inválidos, JSON malformado, tipo errado (`/papas/abc`, `"numeroOrdem": "abc"`, data fora do formato `AAAA-MM-DD`), enum inválido (lista os valores aceitos), parâmetro ausente, ordenação por campo inexistente (`?sort=xyz`), versão não suportada, rota inexistente, método não permitido, registro duplicado ou vinculado. Erros inesperados retornam `500` sem expor detalhes internos e são registrados no log. O tamanho de página máximo é 100.
+Exemplos tratados: campos obrigatórios ou inválidos, papa inexistente (inclusive em `/enciclicas/papa/{papaId}`), JSON malformado, tipo errado (`/papas/abc`, `"numeroOrdem": "abc"`, data fora do formato `AAAA-MM-DD`), enum inválido (lista os valores aceitos), parâmetro ausente, ordenação por campo inexistente (`?sort=xyz`), versão não suportada, rota inexistente, método não permitido, registro duplicado ou vinculado. Erros inesperados retornam `500` sem expor detalhes internos e são registrados no log. O tamanho de página máximo é 100.
 
 ## Autenticação com chave de API (`X-API-Key`)
 
@@ -90,7 +104,7 @@ Os `POST` de cadastro exigem o header `X-Idempotency-Key` com um valor único po
 | Header ausente | `400` |
 | Primeira requisição com a chave | Processa normalmente e guarda a resposta de sucesso por 24 h |
 | Mesma chave e mesmo corpo | Devolve a resposta original **sem cadastrar de novo**, com o header `Idempotency-Replayed: true` |
-| Mesma chave com corpo diferente | `422` |
+| Mesma chave com corpo diferente | `422` (o corpo é comparado pelo conteúdo do JSON: espaços e ordem dos campos não contam) |
 | Mesma chave enquanto a primeira ainda está em processamento | `409` |
 
 As respostas de erro não são guardadas: dá para corrigir os dados e tentar de novo com a mesma chave. Cada chave de API tem o seu próprio espaço de chaves de idempotência.
@@ -108,6 +122,7 @@ Usa o algoritmo **token bucket**, com a biblioteca [Bucket4j](https://bucket4j.c
 - Ao passar do limite a API responde **`429 Too Many Requests`** com o header **`Retry-After`** (segundos até a próxima ficha).
 - Swagger, `/v3/api-docs` e console do H2 ficam fora do limite.
 - Configurável pelas variáveis `RATE_LIMIT_ANONIMO`, `RATE_LIMIT_COM_CHAVE` e `RATE_LIMIT_PERIODO` (ex.: `60s`).
+- O IP **não** vem do header `X-Forwarded-For`: o cliente pode escrever nele qualquer valor e ganhar um balde novo a cada requisição. No Render, o IP vem do `CF-Connecting-IP`, que o Cloudflare (na frente do Render) sempre preenche com o IP real; fora dele, vem da própria conexão. Outro header pode ser escolhido com `RATE_LIMIT_HEADER_IP`.
 
 ## CORS
 

@@ -90,6 +90,27 @@ class DocumentacaoTest {
         }
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = {"v1", "v2"})
+    void secoesNaOrdemCerta(String grupo) throws Exception {
+        List<String> secoes = new ArrayList<>();
+        documentacao(grupo).get("tags").forEach(tag -> secoes.add(tag.get("name").asString()));
+        assertThat(secoes).containsExactly("Papas", "Conclaves", "Encíclicas", "Concílios", "Santos", "Chaves de API");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"v1", "v2"})
+    void novasRegrasDocumentadas(String grupo) throws Exception {
+        JsonNode paths = documentacao(grupo).get("paths");
+        assertThat(paths.get("/papas").get("post").get("responses").get("409").get("content").get("application/json")
+                .get("examples").has("numero-repetido")).isTrue();
+        assertThat(paths.get("/papas/{id}").get("put").get("responses").get("409").get("content").get("application/json")
+                .get("examples").has("registro-ligado")).isTrue();
+        assertThat(paths.get("/enciclicas").get("post").get("responses").get("400").get("content").get("application/json")
+                .get("examples").has("fora-do-pontificado")).isTrue();
+        assertThat(paths.get("/enciclicas/papa/{papaId}").get("get").get("responses").has("404")).isTrue();
+    }
+
     private JsonNode documentacao(String grupo) throws Exception {
         HttpRequest req = HttpRequest.newBuilder(URI.create("http://localhost:" + porta + "/v3/api-docs/" + grupo)).build();
         String corpo = HttpClient.newHttpClient().send(req, HttpResponse.BodyHandlers.ofString()).body();

@@ -26,32 +26,32 @@ public class Papa {
 
     @NotBlank(message = "O nome papal é obrigatório")
     @Size(max = 100, message = "O nome papal deve ter no máximo 100 caracteres")
-    @Schema(example = "Francisco")
+    @Schema(example = "Pio XII")
     private String nomePapal;
 
     @NotBlank(message = "O nome de batismo é obrigatório")
     @Size(max = 150, message = "O nome de batismo deve ter no máximo 150 caracteres")
-    @Schema(example = "Jorge Mario Bergoglio")
+    @Schema(example = "Eugenio Maria Giuseppe Giovanni Pacelli")
     private String nomeBatismo;
 
     @NotNull(message = "O número de ordem é obrigatório")
     @Positive(message = "O número de ordem deve ser positivo")
     @Max(value = 1000, message = "O número de ordem deve ser no máximo 1000")
-    @Schema(description = "Posição na lista de papas (São Pedro = 1)", example = "266")
+    @Schema(description = "Posição na lista de papas (São Pedro = 1). Não pode se repetir", example = "260")
     private Integer numeroOrdem;
 
     @NotBlank(message = "O país de nascimento é obrigatório")
     @Size(max = 60, message = "O país de nascimento deve ter no máximo 60 caracteres")
-    @Schema(example = "Argentina")
+    @Schema(example = "Itália")
     private String paisNascimento;
 
     @NotNull(message = "A data de início do pontificado é obrigatória")
     @PastOrPresent(message = "A data de início não pode estar no futuro")
-    @Schema(example = "2013-03-13")
+    @Schema(description = "Não pode coincidir com o pontificado de outro papa", example = "1939-03-02")
     private LocalDate inicioPontificado;
 
     @PastOrPresent(message = "A data de fim não pode estar no futuro")
-    @Schema(description = "Obrigatória para RENUNCIA e FALECIMENTO; vazia se o papa está EM_EXERCICIO. Não pode ser anterior ao início", example = "2025-04-21")
+    @Schema(description = "Obrigatória para RENUNCIA e FALECIMENTO; vazia se o papa está EM_EXERCICIO. Não pode ser anterior ao início", example = "1958-10-09")
     private LocalDate fimPontificado;
 
     @NotNull(message = "A situação é obrigatória")

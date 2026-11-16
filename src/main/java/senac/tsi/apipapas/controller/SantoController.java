@@ -4,6 +4,7 @@ import senac.tsi.apipapas.exception.RecursoNaoEncontradoException;
 import senac.tsi.apipapas.model.Papa;
 import senac.tsi.apipapas.model.Santo;
 import senac.tsi.apipapas.repository.PapaRepository;
+import senac.tsi.apipapas.validacao.RegrasHistoricas;
 import senac.tsi.apipapas.repository.SantoRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -32,9 +33,11 @@ public class SantoController {
     private final SantoRepository repository;
     private final PapaRepository papaRepository;
     private final PagedResourcesAssembler<Santo> pagedAssembler;
+    private final RegrasHistoricas regras;
 
     SantoController(SantoRepository repository, PapaRepository papaRepository,
-                    PagedResourcesAssembler<Santo> pagedAssembler) {
+                    PagedResourcesAssembler<Santo> pagedAssembler, RegrasHistoricas regras) {
+        this.regras = regras;
         this.repository = repository;
         this.papaRepository = papaRepository;
         this.pagedAssembler = pagedAssembler;
@@ -62,7 +65,7 @@ public class SantoController {
     }
 
     @Operation(summary = "Cadastra um santo",
-            description = "Informe o papa que canonizou pelo id, por exemplo `\"canonizadoPor\": {\"id\": 6}`. A data de canonização não pode estar no futuro.")
+            description = "Informe o papa que canonizou pelo id, por exemplo `\"canonizadoPor\": {\"id\": 6}`. A data de canonização não pode estar no futuro e precisa estar dentro do pontificado do papa que canonizou.")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Santo cadastrado"),
             @ApiResponse(responseCode = "400", description = "Dados inválidos", content = @Content),
@@ -72,6 +75,8 @@ public class SantoController {
     public ResponseEntity<EntityModel<Santo>> criar(@Valid @RequestBody Santo novoSanto) {
         novoSanto.setId(null);
         novoSanto.setCanonizadoPor(buscarPapa(novoSanto.getCanonizadoPor().getId()));
+        regras.validarDentroDoPontificado(novoSanto.getCanonizadoPor(), novoSanto.getDataCanonizacao(),
+                "dataCanonizacao", "A data de canonização");
         Santo salvo = repository.save(novoSanto);
         return ResponseEntity.created(linkTo(methodOn(SantoController.class).buscar(salvo.getId())).toUri())
                 .body(toModel(salvo));
@@ -91,6 +96,8 @@ public class SantoController {
         santo.setPaisOrigem(dados.getPaisOrigem());
         santo.setDataCanonizacao(dados.getDataCanonizacao());
         santo.setCanonizadoPor(buscarPapa(dados.getCanonizadoPor().getId()));
+        regras.validarDentroDoPontificado(santo.getCanonizadoPor(), santo.getDataCanonizacao(),
+                "dataCanonizacao", "A data de canonização");
         return toModel(repository.save(santo));
     }
 

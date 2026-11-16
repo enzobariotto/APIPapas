@@ -5,6 +5,7 @@ import senac.tsi.apipapas.model.Papa;
 import senac.tsi.apipapas.model.PapaV2;
 import senac.tsi.apipapas.model.SituacaoPontificado;
 import senac.tsi.apipapas.repository.PapaRepository;
+import senac.tsi.apipapas.validacao.RegrasHistoricas;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -30,10 +31,12 @@ public class PapaController {
 
     private final PapaRepository repository;
     private final PagedResourcesAssembler<Papa> pagedAssembler;
+    private final RegrasHistoricas regras;
 
-    PapaController(PapaRepository repository, PagedResourcesAssembler<Papa> pagedAssembler) {
+    PapaController(PapaRepository repository, PagedResourcesAssembler<Papa> pagedAssembler, RegrasHistoricas regras) {
         this.repository = repository;
         this.pagedAssembler = pagedAssembler;
+        this.regras = regras;
     }
 
     @Operation(summary = "Lista os papas (versão 1)",
@@ -79,29 +82,33 @@ public class PapaController {
     }
 
     @Operation(summary = "Cadastra um papa",
-            description = "A situação precisa combinar com a data de fim: EM_EXERCICIO sem data de fim; FALECIMENTO ou RENUNCIA com data de fim, que não pode ser anterior ao início. O número de ordem é a posição na lista de papas (São Pedro = 1).")
+            description = "A situação precisa combinar com a data de fim: EM_EXERCICIO sem data de fim; FALECIMENTO ou RENUNCIA com data de fim, que não pode ser anterior ao início. O número de ordem é a posição na lista de papas (São Pedro = 1) e não pode se repetir. O pontificado não pode coincidir com o de outro papa (não há dois papas ao mesmo tempo).")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Papa cadastrado"),
-            @ApiResponse(responseCode = "400", description = "Dados inválidos", content = @Content)
+            @ApiResponse(responseCode = "400", description = "Dados inválidos", content = @Content),
+            @ApiResponse(responseCode = "409", description = "Número de ordem repetido ou pontificado coincidente", content = @Content)
     })
     @PostMapping
     public ResponseEntity<EntityModel<Papa>> criar(@Valid @RequestBody Papa novoPapa) {
         novoPapa.setId(null);
+        regras.validarPapa(novoPapa, null);
         Papa salvo = repository.save(novoPapa);
         EntityModel<Papa> model = toModel(salvo);
         return ResponseEntity.created(linkTo(methodOn(PapaController.class).buscar(salvo.getId())).toUri()).body(model);
     }
 
     @Operation(summary = "Atualiza um papa",
-            description = "Substitui todos os dados do registro (PUT): envie o objeto completo, inclusive os campos que não mudaram. Valem as mesmas validações do cadastro.")
+            description = "Substitui todos os dados do registro (PUT): envie o objeto completo, inclusive os campos que não mudaram. Valem as mesmas validações do cadastro. Além disso, as encíclicas, canonizações, o conclave e os concílios ligados ao papa precisam continuar dentro do novo pontificado.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Papa atualizado"),
             @ApiResponse(responseCode = "400", description = "Dados inválidos", content = @Content),
-            @ApiResponse(responseCode = "404", description = "Papa não encontrado", content = @Content)
+            @ApiResponse(responseCode = "404", description = "Papa não encontrado", content = @Content),
+            @ApiResponse(responseCode = "409", description = "Número de ordem repetido, pontificado coincidente ou registros ligados fora do novo pontificado", content = @Content)
     })
     @PutMapping("/{id}")
     public EntityModel<Papa> atualizar(@Parameter(description = "Id do(a) papa", example = "6") @PathVariable Long id, @Valid @RequestBody Papa dados) {
         Papa papa = buscarPapa(id);
+        regras.validarPapa(dados, id);
         papa.setNomePapal(dados.getNomePapal());
         papa.setNomeBatismo(dados.getNomeBatismo());
         papa.setNumeroOrdem(dados.getNumeroOrdem());

@@ -5,6 +5,7 @@ import senac.tsi.apipapas.model.Conclave;
 import senac.tsi.apipapas.model.Papa;
 import senac.tsi.apipapas.repository.ConclaveRepository;
 import senac.tsi.apipapas.repository.PapaRepository;
+import senac.tsi.apipapas.validacao.RegrasHistoricas;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -33,9 +34,11 @@ public class ConclaveController {
     private final ConclaveRepository repository;
     private final PapaRepository papaRepository;
     private final PagedResourcesAssembler<Conclave> pagedAssembler;
+    private final RegrasHistoricas regras;
 
     ConclaveController(ConclaveRepository repository, PapaRepository papaRepository,
-                       PagedResourcesAssembler<Conclave> pagedAssembler) {
+                       PagedResourcesAssembler<Conclave> pagedAssembler, RegrasHistoricas regras) {
+        this.regras = regras;
         this.repository = repository;
         this.papaRepository = papaRepository;
         this.pagedAssembler = pagedAssembler;
@@ -63,7 +66,7 @@ public class ConclaveController {
     }
 
     @Operation(summary = "Cadastra um conclave",
-            description = "Informe o papa eleito pelo id, por exemplo `\"papa\": {\"id\": 3}`. Cada papa pode ter só um conclave: informar um papa que já tem conclave retorna 409. A data de término não pode ser anterior à de início.")
+            description = "Informe o papa eleito pelo id, por exemplo `\"papa\": {\"id\": 3}`. Cada papa pode ter só um conclave: informar um papa que já tem conclave retorna 409. A data de término não pode ser anterior à de início e deve ser o dia em que começa o pontificado do papa eleito (ou até 30 dias antes).")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Conclave cadastrado"),
             @ApiResponse(responseCode = "400", description = "Dados inválidos", content = @Content),
@@ -74,6 +77,7 @@ public class ConclaveController {
     public ResponseEntity<EntityModel<Conclave>> criar(@Valid @RequestBody Conclave novoConclave) {
         novoConclave.setId(null);
         novoConclave.setPapa(buscarPapa(novoConclave.getPapa().getId()));
+        regras.validarConclave(novoConclave, novoConclave.getPapa());
         Conclave salvo = repository.save(novoConclave);
         return ResponseEntity.created(linkTo(methodOn(ConclaveController.class).buscar(salvo.getId())).toUri())
                 .body(toModel(salvo));
@@ -95,6 +99,7 @@ public class ConclaveController {
         conclave.setNumeroCardeais(dados.getNumeroCardeais());
         conclave.setNumeroEscrutinios(dados.getNumeroEscrutinios());
         conclave.setPapa(buscarPapa(dados.getPapa().getId()));
+        regras.validarConclave(conclave, conclave.getPapa());
         return toModel(repository.save(conclave));
     }
 
