@@ -104,7 +104,7 @@ mensal** (total de requisições no mês):
 1. Todo cadastro (`POST`) deve enviar o header `X-Idempotency-Key` com um
    valor único por operação, por exemplo um UUID. Assim, se a mesma requisição
    for reenviada (por falha de rede ou clique duplo), a API devolve a resposta
-   original em vez de cadastrar o registro duas vezes.
+   original em vez de cadastrar o registro duas vezes.   
 2. A resposta de um cadastro bem-sucedido fica guardada por **24 horas**
    associada à chave de idempotência e à chave de API de quem fez o pedido.
 3. Reutilizar a mesma chave de idempotência com dados diferentes resulta no
@@ -167,7 +167,7 @@ no bloqueio do acesso e na remoção do conteúdo enviado, sem aviso prévio.
 ## 10. Propriedade intelectual
 
 O código-fonte, a documentação e os dados de exemplo da API são distribuídos
-sob a [Licença MIT](LICENSE): qualquer pessoa pode usar, copiar, modificar e
+sob a [Licença MIT](https://opensource.org/license/mit): qualquer pessoa pode usar, copiar, modificar e
 distribuir o código, desde que mantenha o aviso de direitos autorais e o texto
 da licença. Estes Termos de Uso tratam do uso do serviço publicado, e a
 licença trata do uso do código.
