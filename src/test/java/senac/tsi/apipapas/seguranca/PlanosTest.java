@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.test.annotation.DirtiesContext;
+import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.net.URI;
@@ -36,6 +37,30 @@ class PlanosTest {
     int porta;
 
     private final HttpClient http = HttpClient.newHttpClient();
+
+    @Test
+    void tabelaDePlanosEPublica() throws Exception {
+        HttpResponse<String> r = enviar("GET", "/planos", null, null);
+        assertThat(r.statusCode()).isEqualTo(200);
+        JsonNode planos = JSON.readTree(r.body()).get("_embedded").get("planos");
+        assertThat(planos.size()).isEqualTo(3);
+        assertThat(planos.get(1).get("plano").asString()).isEqualTo("BASICO");
+        assertThat(planos.get(1).get("precoMensal").decimalValue()).isEqualByComparingTo("19.90");
+        assertThat(planos.get(1).get("requisicoesPorMinuto").asInt()).isEqualTo(2000);
+        assertThat(planos.get(1).get("cotaMensal").asLong()).isEqualTo(5);
+    }
+
+    @Test
+    void tabelaDePlanosNaoGastaCota() throws Exception {
+        String chave = gerarChave(null);
+        for (int i = 0; i < 5; i++) {
+            HttpResponse<String> r = enviar("GET", "/planos", null, chave);
+            assertThat(r.statusCode()).isEqualTo(200);
+            assertThat(r.headers().firstValue(RateLimitFilter.HEADER_COTA)).isEmpty();
+        }
+        HttpResponse<String> r = enviar("GET", "/papas?size=1", null, chave);
+        assertThat(header(r, RateLimitFilter.HEADER_COTA_RESTANTE)).isEqualTo("2");
+    }
 
     @Test
     void chaveSemPlanoEGratuitaEDa429QuandoACotaAcaba() throws Exception {

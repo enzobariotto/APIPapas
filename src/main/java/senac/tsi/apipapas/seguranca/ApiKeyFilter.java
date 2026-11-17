@@ -20,7 +20,7 @@ import java.util.Set;
  * Exige o header X-API-Key:
  * - em /chaves-api: somente a chave de admin;
  * - em POST/PUT/PATCH/DELETE dos recursos: chave de admin ou chave de usuário ativa.
- * Os GETs dos recursos continuam públicos.
+ * Os GETs dos recursos e a tabela de planos (GET /planos) continuam públicos.
  */
 @Component
 @Order(2)
@@ -32,6 +32,7 @@ public class ApiKeyFilter extends OncePerRequestFilter {
 
     public static final List<String> RECURSOS = List.of("/papas", "/conclaves", "/enciclicas", "/concilios", "/santos");
     public static final String CHAVES_API = "/chaves-api";
+    public static final String PLANOS = "/planos";
     private static final Set<String> METODOS_ESCRITA = Set.of("POST", "PUT", "PATCH", "DELETE");
 
     private final ChaveAdmin chaveAdmin;

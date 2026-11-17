@@ -78,6 +78,8 @@ mensal** (total de requisições no mês):
 - Para trocar de plano, fale com o autor
   ([seção 12](#12-legislação-e-contato)). O administrador altera o plano da
   chave, e os novos limites valem a partir da requisição seguinte.
+- A tabela de planos também pode ser consultada em `GET /planos`, que é
+  pública e não gasta a cota.
 - O consumo da sua chave aparece em toda resposta, nos headers
   `X-Quota-Limit`, `X-Quota-Remaining` e `X-Quota-Reset` (ver abaixo).
 
@@ -164,9 +166,11 @@ no bloqueio do acesso e na remoção do conteúdo enviado, sem aviso prévio.
 
 ## 10. Propriedade intelectual
 
-O código-fonte, a documentação e os dados de exemplo da API estão sujeitos à
-[Licença de Uso da API de Papas](LICENSE). Estes Termos de Uso tratam do uso
-do serviço publicado, e a licença trata do uso do código.
+O código-fonte, a documentação e os dados de exemplo da API são distribuídos
+sob a [Licença MIT](LICENSE): qualquer pessoa pode usar, copiar, modificar e
+distribuir o código, desde que mantenha o aviso de direitos autorais e o texto
+da licença. Estes Termos de Uso tratam do uso do serviço publicado, e a
+licença trata do uso do código.
 
 ## 11. Isenção de garantias e alterações
 

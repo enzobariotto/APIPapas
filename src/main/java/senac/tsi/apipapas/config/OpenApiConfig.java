@@ -101,7 +101,7 @@ class OpenApiConfig {
 
     /** Ordem das seções no Swagger UI: o recurso central primeiro e a administração por último. */
     private static final List<String> ORDEM_DAS_SECOES =
-            List.of("Papas", "Conclaves", "Encíclicas", "Concílios", "Santos", "Chaves de API");
+            List.of("Papas", "Conclaves", "Encíclicas", "Concílios", "Santos", "Planos", "Chaves de API");
 
     /**
      * Seções na ordem de ORDEM_DAS_SECOES e, dentro de cada uma, a coleção antes das consultas e do registro
@@ -141,7 +141,7 @@ class OpenApiConfig {
                 .description(introducao(versao))
                 .termsOfService(Documentacao.TERMOS_DE_USO)
                 .contact(new Contact().name("Enzo Bariotto").url(Documentacao.REPOSITORIO))
-                .license(new License().name("Licença de Uso da API de Papas").url(Documentacao.LICENCA));
+                .license(new License().name("Licença MIT").url(Documentacao.LICENCA));
     }
 
     private static String introducao(String versao) {

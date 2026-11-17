@@ -95,7 +95,7 @@ class DocumentacaoTest {
     void secoesNaOrdemCerta(String grupo) throws Exception {
         List<String> secoes = new ArrayList<>();
         documentacao(grupo).get("tags").forEach(tag -> secoes.add(tag.get("name").asString()));
-        assertThat(secoes).containsExactly("Papas", "Conclaves", "Encíclicas", "Concílios", "Santos", "Chaves de API");
+        assertThat(secoes).containsExactly("Papas", "Conclaves", "Encíclicas", "Concílios", "Santos", "Planos", "Chaves de API");
     }
 
     @ParameterizedTest
@@ -115,5 +115,15 @@ class DocumentacaoTest {
         HttpRequest req = HttpRequest.newBuilder(URI.create("http://localhost:" + porta + "/v3/api-docs/" + grupo)).build();
         String corpo = HttpClient.newHttpClient().send(req, HttpResponse.BodyHandlers.ofString()).body();
         return JsonMapper.builder().build().readTree(corpo);
+    }
+
+    @org.junit.jupiter.api.Test
+    void cabecalhoEmPortuguesComLicencaMit() throws Exception {
+        HttpResponse<String> script = HttpClient.newHttpClient().send(HttpRequest.newBuilder(
+                URI.create("http://localhost:" + porta + "/swagger-ui/swagger-initializer.js")).build(),
+                HttpResponse.BodyHandlers.ofString());
+        assertThat(script.statusCode()).isEqualTo(200);
+        assertThat(script.body()).contains("SwaggerUIBundle").contains("\"Terms of service\": \"Termos de Uso\"");
+        assertThat(documentacao("v1").get("info").get("license").get("name").asString()).isEqualTo("Licença MIT");
     }
 }

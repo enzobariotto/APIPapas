@@ -52,13 +52,13 @@ public class ChaveApiController {
             @Size(max = 100, message = "O nome deve ter no máximo 100 caracteres")
             @Schema(description = "Nome do usuário ou aplicação que vai usar a chave", example = "Professor")
             String nome,
-            @Schema(description = "Plano da chave: GRATUITO, BASICO ou PRO (ver Termos de Uso). Sem o campo, vale GRATUITO", example = "BASICO")
+            @Schema(description = "Plano da chave: GRATUITO, BASICO ou PRO (ver GET /planos). Sem o campo, vale GRATUITO", example = "BASICO")
             Plano plano) {
     }
 
     public record AlteracaoPlano(
             @NotNull(message = "O plano é obrigatório")
-            @Schema(description = "Novo plano da chave: GRATUITO, BASICO ou PRO", example = "PRO")
+            @Schema(description = "Novo plano da chave: GRATUITO, BASICO ou PRO (ver GET /planos)", example = "PRO")
             Plano plano) {
     }
 

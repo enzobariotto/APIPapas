@@ -40,7 +40,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * Além do limite por minuto, cada chave de usuário tem uma cota mensal (total de requisições no mês, conforme o
  * plano). Quando a cota acaba, a API responde 429 até o dia 1º do mês seguinte. As respostas com chave trazem os
  * headers X-Quota-Limit (cota do mês), X-Quota-Remaining (requisições restantes no mês) e X-Quota-Reset (data em
- * que a cota renova).
+ * que a cota renova). A tabela de planos (GET /planos) não conta na cota.
  *
  * O IP nunca vem do header X-Forwarded-For, porque o cliente pode escrever nele o que quiser (e o proxy do Render
  * só acrescenta o IP verdadeiro no fim da lista): trocando o valor a cada requisição, ele ganharia um balde novo
@@ -123,7 +123,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
                     + (espera == 1 ? " segundo" : " segundos") + ". Limites de uso: " + Documentacao.TERMOS_LIMITES);
             return;
         }
-        if (cliente.chaveId() != null) {
+        if (cliente.chaveId() != null && !foraDaCota(request)) {
             ChaveApiService.Cota cota = chaveApiService.consumirCota(cliente.chaveId());
             response.setHeader(HEADER_COTA, String.valueOf(cota.cotaMensal()));
             response.setHeader(HEADER_COTA_RESTANTE, String.valueOf(cota.restantes()));
@@ -142,7 +142,12 @@ public class RateLimitFilter extends OncePerRequestFilter {
     public static String mensagemCotaEsgotada(ChaveApiService.Cota cota) {
         return "Cota mensal de " + cota.cotaMensal() + " requisições do plano " + cota.plano().getNome()
                 + " esgotada. A cota renova em " + Planos.renovacao().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))
-                + ". Para aumentar a cota, veja os planos em " + Documentacao.TERMOS_PLANOS;
+                + ". Para aumentar a cota, veja os planos em GET /planos e " + Documentacao.TERMOS_PLANOS;
+    }
+
+    /** A tabela de planos (GET /planos) não gasta a cota mensal. */
+    private static boolean foraDaCota(HttpServletRequest request) {
+        return ApiKeyFilter.caminho(request).equals(ApiKeyFilter.PLANOS);
     }
 
     /**

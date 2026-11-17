@@ -34,7 +34,7 @@ public class ChaveApi {
 
     private Instant revogadaEm;
 
-    @Schema(description = "Plano da chave: define o limite por minuto e a cota mensal (ver Termos de Uso)", example = "BASICO")
+    @Schema(description = "Plano da chave: define o limite por minuto e a cota mensal (ver GET /planos)", example = "BASICO")
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Plano plano = Plano.GRATUITO;
