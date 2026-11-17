@@ -2,7 +2,15 @@
 
 API REST em Spring Boot (baseada no tutorial https://spring.io/guides/tutorials/rest) sobre os papas da Igreja Católica.
 
-## Como rodar
+## Acesse online
+
+- API (Render): https://apipapas.onrender.com
+- Swagger: https://apipapas.onrender.com/swagger-ui.html
+- Front-end (Vercel): https://apipapas-static.vercel.app
+
+No plano gratuito do Render, a API "dorme" quando fica parada: o primeiro acesso pode levar cerca de 50 segundos.
+
+## Como rodar localmente
 
 Rode `ApiPapasApplication` no IntelliJ e acesse:
 
