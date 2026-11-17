@@ -101,7 +101,7 @@ class OpenApiConfig {
 
     /** Ordem das seções no Swagger UI: o recurso central primeiro e a administração por último. */
     private static final List<String> ORDEM_DAS_SECOES =
-            List.of("Papas", "Conclaves", "Encíclicas", "Concílios", "Santos", "Planos", "Chaves de API");
+            List.of("Papas", "Conclaves", "Encíclicas", "Concílios", "Santos", "Chaves de API");
 
     /**
      * Seções na ordem de ORDEM_DAS_SECOES e, dentro de cada uma, a coleção antes das consultas e do registro

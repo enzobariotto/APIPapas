@@ -78,9 +78,8 @@ mensal** (total de requisições no mês):
 - Para trocar de plano, fale com o autor
   ([seção 12](#12-legislação-e-contato)). O administrador altera o plano da
   chave, e os novos limites valem a partir da requisição seguinte.
-- Os valores vigentes podem ser consultados a qualquer momento em
-  `GET /planos`, e o consumo da sua chave em `GET /planos/uso` (com a chave
-  no header `X-API-Key`). Essas duas consultas não gastam a cota.
+- O consumo da sua chave aparece em toda resposta, nos headers
+  `X-Quota-Limit`, `X-Quota-Remaining` e `X-Quota-Reset` (ver abaixo).
 
 1. Toda resposta informa o limite e o consumo nos headers
    `X-RateLimit-Limit` (limite), `X-RateLimit-Remaining` (requisições

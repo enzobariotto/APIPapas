@@ -23,7 +23,6 @@ import senac.tsi.apipapas.model.SituacaoPontificado;
 import senac.tsi.apipapas.seguranca.RateLimitFilter;
 import tools.jackson.databind.json.JsonMapper;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -92,7 +91,6 @@ final class ExemplosOpenApi {
             "enciclicas", new Recurso("encíclica", true),
             "concilios", new Recurso("concílio", false),
             "santos", new Recurso("santo", false),
-            "planos", new Recurso("plano", false),
             "chaves-api", new Recurso("chave de API", true));
 
     private ExemplosOpenApi() {
@@ -152,7 +150,7 @@ final class ExemplosOpenApi {
                 .examples(mapa)));
         if (status.equals("429")) {
             resposta.addHeaderObject("Retry-After", header("Segundos até a próxima requisição ser liberada", new IntegerSchema().example(2)));
-            resposta.addHeaderObject(RateLimitFilter.HEADER_LIMITE, header("Limite de requisições por minuto: 30 sem chave; com chave, o do plano (ver GET /planos)", new IntegerSchema().example(30)));
+            resposta.addHeaderObject(RateLimitFilter.HEADER_LIMITE, header("Limite de requisições por minuto: 30 sem chave; com chave, o do plano da chave", new IntegerSchema().example(30)));
             resposta.addHeaderObject(RateLimitFilter.HEADER_RESTANTE, header("Requisições disponíveis agora", new IntegerSchema().example(0)));
             resposta.addHeaderObject(RateLimitFilter.HEADER_RESET, header("Segundos até o limite ser totalmente restaurado", new IntegerSchema().example(60)));
             if (e.contaNaCota()) {
@@ -192,7 +190,6 @@ final class ExemplosOpenApi {
             case "enciclicas" -> enciclica(5);
             case "concilios" -> concilio(2);
             case "santos" -> santo(4);
-            case "planos" -> e.caminho.equals("/planos/uso") ? uso() : planos();
             default -> e.metodo == PathItem.HttpMethod.POST ? chaveGerada() : chave(1, "Professor", true);
         };
     }
@@ -296,39 +293,6 @@ final class ExemplosOpenApi {
                 "revogar", "/chaves-api/" + id, "chaves-api", "/chaves-api"));
     }
 
-    private static Map<String, Object> planos() {
-        List<Object> itens = List.of(
-                plano("GRATUITO", "Gratuito", "0", 60, 3000),
-                plano("BASICO", "Básico", "19.90", 120, 50000),
-                plano("PRO", "Pro", "49.90", 300, 300000));
-        Map<String, Object> resultado = new LinkedHashMap<>();
-        resultado.put("_embedded", Map.of("planos", itens));
-        resultado.put("_links", links("self", "/planos", "uso", "/planos/uso"));
-        return resultado;
-    }
-
-    private static Map<String, Object> plano(String plano, String nome, String preco, int porMinuto, long cota) {
-        Map<String, Object> dados = new LinkedHashMap<>();
-        dados.put("plano", plano);
-        dados.put("nome", nome);
-        dados.put("precoMensal", new BigDecimal(preco));
-        dados.put("requisicoesPorMinuto", porMinuto);
-        dados.put("cotaMensal", cota);
-        return dados;
-    }
-
-    private static Map<String, Object> uso() {
-        Map<String, Object> dados = new LinkedHashMap<>();
-        dados.put("nome", "Professor");
-        dados.put("prefixo", "papas_DhE6Z");
-        dados.put("plano", "BASICO");
-        dados.put("requisicoesPorMinuto", 120);
-        dados.put("cotaMensal", 50000);
-        dados.put("usadasNoMes", 1234);
-        dados.put("restantesNoMes", 48766);
-        dados.put("renovaEm", "2026-12-01");
-        return comLinks(dados, links("self", "/planos/uso", "planos", "/planos"));
-    }
 
     private static Map<String, Object> chaveGerada() {
         Map<String, Object> dados = new LinkedHashMap<>();
@@ -494,7 +458,7 @@ final class ExemplosOpenApi {
                 if (e.contaNaCota()) {
                     lista.add(erro("cota", "cota mensal do plano esgotada", 429,
                             "Cota mensal de 3000 requisições do plano Gratuito esgotada. A cota renova em 01/12/2026. "
-                                    + "Para aumentar a cota, veja os planos em GET /planos e " + Documentacao.TERMOS_PLANOS,
+                                    + "Para aumentar a cota, veja os planos em " + Documentacao.TERMOS_PLANOS,
                             e.concreto("6"), null));
                 }
             }
@@ -614,12 +578,12 @@ final class ExemplosOpenApi {
 
         /** GET que devolve uma página: a coleção ou uma consulta personalizada (tudo que não é /{id}). */
         boolean listagem() {
-            return metodo == PathItem.HttpMethod.GET && !caminho.endsWith("/{id}") && !recurso.equals("planos");
+            return metodo == PathItem.HttpMethod.GET && !caminho.endsWith("/{id}");
         }
 
-        /** Requisições que gastam a cota mensal da chave (as de admin e as consultas de planos não gastam). */
+        /** Requisições que gastam a cota mensal da chave (as de admin não gastam). */
         boolean contaNaCota() {
-            return !recurso.equals("chaves-api") && !recurso.equals("planos");
+            return !recurso.equals("chaves-api");
         }
 
         /** Endpoints com versão 1 e 2 (consultas de papas). */

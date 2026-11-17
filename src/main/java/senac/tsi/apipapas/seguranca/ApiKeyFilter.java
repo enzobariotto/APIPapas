@@ -19,9 +19,8 @@ import java.util.Set;
 /**
  * Exige o header X-API-Key:
  * - em /chaves-api: somente a chave de admin;
- * - em POST/PUT/PATCH/DELETE dos recursos: chave de admin ou chave de usuário ativa;
- * - em /planos/uso: chave de usuário ativa (mostra o uso dessa chave).
- * Os GETs dos recursos e a tabela de planos (GET /planos) continuam públicos.
+ * - em POST/PUT/PATCH/DELETE dos recursos: chave de admin ou chave de usuário ativa.
+ * Os GETs dos recursos continuam públicos.
  */
 @Component
 @Order(2)
@@ -33,10 +32,6 @@ public class ApiKeyFilter extends OncePerRequestFilter {
 
     public static final List<String> RECURSOS = List.of("/papas", "/conclaves", "/enciclicas", "/concilios", "/santos");
     public static final String CHAVES_API = "/chaves-api";
-    public static final String PLANOS = "/planos";
-    public static final String USO = PLANOS + "/uso";
-    /** Atributo da requisição com o id da chave de usuário que chamou /planos/uso. */
-    public static final String ATRIBUTO_CHAVE_ID = "apiPapas.chaveId";
     private static final Set<String> METODOS_ESCRITA = Set.of("POST", "PUT", "PATCH", "DELETE");
 
     private final ChaveAdmin chaveAdmin;
@@ -63,20 +58,6 @@ public class ApiKeyFilter extends OncePerRequestFilter {
                 return;
             }
             request.setAttribute(ATRIBUTO_CLIENTE, "admin");
-        } else if (pertence(caminho, USO)) {
-            if (chave == null || chave.isBlank()) {
-                erro(request, response, HttpServletResponse.SC_UNAUTHORIZED, "Informe uma chave de API válida no header " + HEADER
-                        + ". Para solicitar uma chave, veja " + Documentacao.TERMOS_CHAVES);
-                return;
-            }
-            var chaveApi = chaveApiService.validar(chave);
-            if (chaveApi.isEmpty()) {
-                erro(request, response, HttpServletResponse.SC_UNAUTHORIZED, "Chave de API inválida ou revogada. "
-                        + "Para solicitar uma nova chave, veja " + Documentacao.TERMOS_CHAVES);
-                return;
-            }
-            request.setAttribute(ATRIBUTO_CLIENTE, "chave-" + chaveApi.get().getId());
-            request.setAttribute(ATRIBUTO_CHAVE_ID, chaveApi.get().getId());
         } else if (METODOS_ESCRITA.contains(request.getMethod()) && ehRecurso(caminho)) {
             if (chave == null || chave.isBlank()) {
                 erro(request, response, HttpServletResponse.SC_UNAUTHORIZED, "Informe uma chave de API válida no header " + HEADER

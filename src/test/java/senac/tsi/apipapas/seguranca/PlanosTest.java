@@ -4,7 +4,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.test.annotation.DirtiesContext;
-import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.net.URI;
@@ -39,18 +38,6 @@ class PlanosTest {
     private final HttpClient http = HttpClient.newHttpClient();
 
     @Test
-    void tabelaDePlanosEPublica() throws Exception {
-        HttpResponse<String> r = enviar("GET", "/planos", null, null);
-        assertThat(r.statusCode()).isEqualTo(200);
-        JsonNode planos = JSON.readTree(r.body()).get("_embedded").get("planos");
-        assertThat(planos.size()).isEqualTo(3);
-        assertThat(planos.get(1).get("plano").asString()).isEqualTo("BASICO");
-        assertThat(planos.get(1).get("precoMensal").decimalValue()).isEqualByComparingTo("19.90");
-        assertThat(planos.get(1).get("requisicoesPorMinuto").asInt()).isEqualTo(2000);
-        assertThat(planos.get(1).get("cotaMensal").asLong()).isEqualTo(5);
-    }
-
-    @Test
     void chaveSemPlanoEGratuitaEDa429QuandoACotaAcaba() throws Exception {
         String chave = gerarChave(null);
         for (int restantes = 2; restantes >= 0; restantes--) {
@@ -63,14 +50,6 @@ class PlanosTest {
         assertThat(esgotada.statusCode()).isEqualTo(429);
         assertThat(JSON.readTree(esgotada.body()).get("mensagem").asString()).contains("Cota mensal de 3 requisições do plano Gratuito");
         assertThat(Long.parseLong(header(esgotada, "Retry-After"))).isPositive();
-
-        // A consulta de uso não gasta cota e continua respondendo
-        HttpResponse<String> uso = enviar("GET", "/planos/uso", null, chave);
-        assertThat(uso.statusCode()).isEqualTo(200);
-        JsonNode corpo = JSON.readTree(uso.body());
-        assertThat(corpo.get("plano").asString()).isEqualTo("GRATUITO");
-        assertThat(corpo.get("usadasNoMes").asLong()).isEqualTo(3);
-        assertThat(corpo.get("restantesNoMes").asLong()).isZero();
     }
 
     @Test
@@ -105,12 +84,6 @@ class PlanosTest {
         gerarChave(null);
         assertThat(enviar("PUT", "/chaves-api/1/plano", "{}", ADMIN).statusCode()).isEqualTo(400);
         assertThat(enviar("PUT", "/chaves-api/99/plano", "{\"plano\": \"PRO\"}", ADMIN).statusCode()).isEqualTo(404);
-    }
-
-    @Test
-    void usoExigeChaveDeUsuario() throws Exception {
-        assertThat(enviar("GET", "/planos/uso", null, null).statusCode()).isEqualTo(401);
-        assertThat(enviar("GET", "/planos/uso", null, "papas_inventada").statusCode()).isEqualTo(401);
     }
 
     @Test

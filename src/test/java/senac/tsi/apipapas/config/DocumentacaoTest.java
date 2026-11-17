@@ -95,7 +95,7 @@ class DocumentacaoTest {
     void secoesNaOrdemCerta(String grupo) throws Exception {
         List<String> secoes = new ArrayList<>();
         documentacao(grupo).get("tags").forEach(tag -> secoes.add(tag.get("name").asString()));
-        assertThat(secoes).containsExactly("Papas", "Conclaves", "Encíclicas", "Concílios", "Santos", "Planos", "Chaves de API");
+        assertThat(secoes).containsExactly("Papas", "Conclaves", "Encíclicas", "Concílios", "Santos", "Chaves de API");
     }
 
     @ParameterizedTest
