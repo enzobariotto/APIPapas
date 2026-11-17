@@ -45,7 +45,8 @@ class WebConfig implements WebMvcConfigurer {
                 ApiKeyFilter.HEADER, IdempotenciaFilter.HEADER, HEADER_VERSAO));
         config.setExposedHeaders(List.of(HttpHeaders.LOCATION, HttpHeaders.RETRY_AFTER, HEADER_VERSAO,
                 IdempotenciaFilter.HEADER_REPETIDA,
-                RateLimitFilter.HEADER_LIMITE, RateLimitFilter.HEADER_RESTANTE, RateLimitFilter.HEADER_RESET));
+                RateLimitFilter.HEADER_LIMITE, RateLimitFilter.HEADER_RESTANTE, RateLimitFilter.HEADER_RESET,
+                RateLimitFilter.HEADER_COTA, RateLimitFilter.HEADER_COTA_RESTANTE, RateLimitFilter.HEADER_COTA_RENOVA));
         // A autenticação é pelo header X-API-Key, sem cookies: não há necessidade de enviar credenciais.
         config.setAllowCredentials(false);
         config.setMaxAge(Duration.ofHours(1));

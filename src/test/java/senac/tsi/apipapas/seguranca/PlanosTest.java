@@ -87,6 +87,17 @@ class PlanosTest {
     }
 
     @Test
+    void headersDeCotaLiberadosParaONavegador() throws Exception {
+        HttpRequest req = HttpRequest.newBuilder(URI.create("http://localhost:" + porta + "/papas?size=1"))
+                .header("Origin", "http://localhost:5173")
+                .header(ApiKeyFilter.HEADER, gerarChave(null))
+                .build();
+        String expostos = header(http.send(req, HttpResponse.BodyHandlers.ofString()), "Access-Control-Expose-Headers");
+        assertThat(expostos).contains(RateLimitFilter.HEADER_COTA, RateLimitFilter.HEADER_COTA_RESTANTE,
+                RateLimitFilter.HEADER_COTA_RENOVA);
+    }
+
+    @Test
     void adminNaoTemCotaMensal() throws Exception {
         for (int i = 0; i < 5; i++) {
             HttpResponse<String> r = enviar("GET", "/papas?size=1", null, ADMIN);
