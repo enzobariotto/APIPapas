@@ -1,6 +1,6 @@
 # Termos de Uso da API de Papas
 
-Última atualização: 15 de novembro de 2026
+Última atualização: 16 de novembro de 2026
 
 Estes Termos de Uso regulam o acesso e a utilização da **API de Papas**
 (doravante "API"), desenvolvida por Enzo Bariotto como projeto acadêmico do
@@ -17,8 +17,9 @@ educacional e de demonstração.
 
 ## 2. Acesso
 
-1. O uso é gratuito. As **consultas** (requisições `GET`) são públicas e não
-   exigem cadastro nem chave.
+1. As **consultas** (requisições `GET`) são públicas e não exigem cadastro
+   nem chave. Com uma chave de API, o uso segue o plano da chave (Gratuito,
+   Básico ou Pro), conforme a seção [Planos e preços](#planos-e-preços).
 2. Os **cadastros, alterações e exclusões** (`POST`, `PUT` e `DELETE`) exigem
    uma chave de API, conforme a [seção 3](#3-chaves-de-api).
 3. A API pode ser usada pela documentação Swagger (`/swagger-ui.html`), pela
@@ -34,7 +35,8 @@ educacional e de demonstração.
 1. As chaves de API são geradas somente pelo administrador da API. Para
    solicitar uma, entre em contato com o autor pelo repositório indicado na
    [seção 12](#12-legislação-e-contato), informando seu nome ou o nome da
-   aplicação que vai usá-la.
+   aplicação que vai usá-la e o plano desejado. Sem indicação, a chave é
+   criada no plano Gratuito.
 2. A chave é **pessoal e intransferível**. Você é responsável por todas as
    requisições feitas com ela e não deve publicá-la (em repositórios públicos,
    código de páginas web, capturas de tela etc.) nem compartilhá-la.
@@ -54,17 +56,39 @@ requisições de cada cliente (*rate limiting*):
 | Cliente | Identificado por | Limite atual |
 |---|---|---|
 | Sem chave de API | Endereço IP | 30 requisições por minuto |
-| Com chave de API | Chave | 60 requisições por minuto |
+| Com chave de API | Chave | O do plano da chave (tabela abaixo) |
 
 O limite funciona como um saldo que se recupera aos poucos: cada requisição
-consome uma unidade e o saldo volta gradualmente ao longo do minuto (uma
-unidade a cada 2 segundos sem chave, ou a cada segundo com chave).
+consome uma unidade e o saldo volta gradualmente ao longo do minuto (por
+exemplo, uma unidade a cada 2 segundos sem chave).
+
+### Planos e preços
+
+Cada chave de API tem um plano, que define o limite por minuto e a **cota
+mensal** (total de requisições no mês):
+
+| Plano | Preço | Limite por minuto | Cota mensal |
+|---|---|---|---|
+| Gratuito | R$ 0 | 60 requisições | 3.000 requisições |
+| Básico | R$ 19,90 por mês | 120 requisições | 50.000 requisições |
+| Pro | R$ 49,90 por mês | 300 requisições | 300.000 requisições |
+
+- A cota renova à meia-noite do dia 1º de cada mês (horário de Brasília).
+  Requisições não usadas não acumulam para o mês seguinte.
+- Para trocar de plano, fale com o autor
+  ([seção 12](#12-legislação-e-contato)). O administrador altera o plano da
+  chave, e os novos limites valem a partir da requisição seguinte.
+- Os valores vigentes podem ser consultados a qualquer momento em
+  `GET /planos`, e o consumo da sua chave em `GET /planos/uso` (com a chave
+  no header `X-API-Key`). Essas duas consultas não gastam a cota.
 
 1. Toda resposta informa o limite e o consumo nos headers
    `X-RateLimit-Limit` (limite), `X-RateLimit-Remaining` (requisições
    disponíveis agora) e `X-RateLimit-Reset` (segundos até o saldo ser
-   totalmente restaurado).
-2. Ao passar do limite, a API responde **`429 Too Many Requests`** com o header
+   totalmente restaurado). Com chave de usuário, também trazem
+   `X-Quota-Limit` (cota mensal), `X-Quota-Remaining` (requisições que restam
+   no mês) e `X-Quota-Reset` (dia em que a cota renova).
+2. Ao passar do limite por minuto ou esgotar a cota mensal, a API responde **`429 Too Many Requests`** com o header
    **`Retry-After`**, que indica quantos segundos esperar. Aplicações clientes
    devem respeitar esse tempo antes de tentar novamente, em vez de repetir a
    requisição em sequência.

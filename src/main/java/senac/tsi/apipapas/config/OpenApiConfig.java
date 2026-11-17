@@ -101,7 +101,7 @@ class OpenApiConfig {
 
     /** Ordem das seções no Swagger UI: o recurso central primeiro e a administração por último. */
     private static final List<String> ORDEM_DAS_SECOES =
-            List.of("Papas", "Conclaves", "Encíclicas", "Concílios", "Santos", "Chaves de API");
+            List.of("Papas", "Conclaves", "Encíclicas", "Concílios", "Santos", "Planos", "Chaves de API");
 
     /**
      * Seções na ordem de ORDEM_DAS_SECOES e, dentro de cada uma, a coleção antes das consultas e do registro
@@ -171,11 +171,11 @@ class OpenApiConfig {
                 %s
 
                 O uso da API está sujeito aos [Termos de Uso](%s), que tratam das [chaves de API](%s), \
-                dos [limites de requisições](%s) e das [versões](%s). \
+                dos [limites de requisições](%s), dos [planos](%s) e das [versões](%s). \
                 Também é possível usar a API pela [interface web](/).
                 """.formatted(sobreVersao,
                 Documentacao.TERMOS_DE_USO, Documentacao.TERMOS_CHAVES,
-                Documentacao.TERMOS_LIMITES, Documentacao.TERMOS_VERSOES);
+                Documentacao.TERMOS_LIMITES, Documentacao.TERMOS_PLANOS, Documentacao.TERMOS_VERSOES);
     }
 
     // ---------------------------------------------------------------- respostas comuns

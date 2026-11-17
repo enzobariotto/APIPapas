@@ -3,8 +3,10 @@ package senac.tsi.apipapas.model;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
+import senac.tsi.apipapas.seguranca.Planos;
 
 import java.time.Instant;
+import java.time.YearMonth;
 
 @Entity
 public class ChaveApi {
@@ -32,13 +34,26 @@ public class ChaveApi {
 
     private Instant revogadaEm;
 
+    @Schema(description = "Plano da chave: define o limite por minuto e a cota mensal (ver GET /planos)", example = "BASICO")
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Plano plano = Plano.GRATUITO;
+
+    /** Mês (AAAA-MM) a que se refere o contador requisicoes. Ao virar o mês, o contador volta a zero. */
+    @JsonIgnore
+    private String mesReferencia;
+
+    @JsonIgnore
+    private long requisicoes;
+
     public ChaveApi() {
     }
 
-    public ChaveApi(String nome, String prefixo, String hash) {
+    public ChaveApi(String nome, String prefixo, String hash, Plano plano) {
         this.nome = nome;
         this.prefixo = prefixo;
         this.hash = hash;
+        this.plano = plano == null ? Plano.GRATUITO : plano;
         this.criadaEm = Instant.now();
     }
 
@@ -81,5 +96,36 @@ public class ChaveApi {
     public void revogar() {
         this.ativa = false;
         this.revogadaEm = Instant.now();
+    }
+
+    public Plano getPlano() {
+        return plano;
+    }
+
+    public void setPlano(Plano plano) {
+        this.plano = plano;
+    }
+
+    @Schema(description = "Requisições feitas com a chave no mês atual (a cota renova no dia 1º)", example = "1234")
+    public long getRequisicoesNoMes() {
+        return Planos.mesAtual().toString().equals(mesReferencia) ? requisicoes : 0;
+    }
+
+    /**
+     * Conta mais uma requisição no mês atual, se ainda houver cota.
+     *
+     * @return false quando a cota do mês já foi toda usada (a requisição não é contada)
+     */
+    public boolean consumirCota(long cotaMensal) {
+        YearMonth mes = Planos.mesAtual();
+        if (!mes.toString().equals(mesReferencia)) {
+            mesReferencia = mes.toString();
+            requisicoes = 0;
+        }
+        if (requisicoes >= cotaMensal) {
+            return false;
+        }
+        requisicoes++;
+        return true;
     }
 }

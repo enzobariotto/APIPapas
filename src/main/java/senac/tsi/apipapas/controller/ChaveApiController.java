@@ -2,6 +2,7 @@ package senac.tsi.apipapas.controller;
 
 import senac.tsi.apipapas.exception.RecursoNaoEncontradoException;
 import senac.tsi.apipapas.model.ChaveApi;
+import senac.tsi.apipapas.model.Plano;
 import senac.tsi.apipapas.repository.ChaveApiRepository;
 import senac.tsi.apipapas.seguranca.ChaveApiService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -14,6 +15,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Pageable;
@@ -49,7 +51,15 @@ public class ChaveApiController {
             @NotBlank(message = "O nome é obrigatório")
             @Size(max = 100, message = "O nome deve ter no máximo 100 caracteres")
             @Schema(description = "Nome do usuário ou aplicação que vai usar a chave", example = "Professor")
-            String nome) {
+            String nome,
+            @Schema(description = "Plano da chave (ver GET /planos). Sem o campo, vale GRATUITO", example = "BASICO")
+            Plano plano) {
+    }
+
+    public record AlteracaoPlano(
+            @NotNull(message = "O plano é obrigatório")
+            @Schema(description = "Novo plano da chave (ver GET /planos)", example = "PRO")
+            Plano plano) {
     }
 
     public record ChaveApiGerada(
@@ -58,6 +68,7 @@ public class ChaveApiController {
             String prefixo,
             @Schema(description = "Valor completo da chave. Guarde-o: ele não será mostrado novamente.")
             String chave,
+            Plano plano,
             Instant criadaEm) {
     }
 
@@ -71,11 +82,12 @@ public class ChaveApiController {
     })
     @PostMapping
     public ResponseEntity<EntityModel<ChaveApiGerada>> gerar(@Valid @RequestBody NovaChaveApi dados) {
-        ChaveApiService.ChaveGerada gerada = service.gerar(dados.nome());
+        ChaveApiService.ChaveGerada gerada = service.gerar(dados.nome(), dados.plano());
         ChaveApi chave = gerada.chave();
         EntityModel<ChaveApiGerada> model = EntityModel.of(
-                new ChaveApiGerada(chave.getId(), chave.getNome(), chave.getPrefixo(), gerada.valor(), chave.getCriadaEm()),
+                new ChaveApiGerada(chave.getId(), chave.getNome(), chave.getPrefixo(), gerada.valor(), chave.getPlano(), chave.getCriadaEm()),
                 linkTo(methodOn(ChaveApiController.class).buscar(chave.getId())).withSelfRel(),
+                linkTo(methodOn(ChaveApiController.class).alterarPlano(chave.getId(), null)).withRel("plano"),
                 linkTo(methodOn(ChaveApiController.class).revogar(chave.getId())).withRel("revogar"),
                 linkTo(ChaveApiController.class).withRel("chaves-api"));
         return ResponseEntity.created(linkTo(methodOn(ChaveApiController.class).buscar(chave.getId())).toUri()).body(model);
@@ -105,6 +117,24 @@ public class ChaveApiController {
         return toModel(buscarChave(id));
     }
 
+    @Operation(summary = "Altera o plano de uma chave de API",
+            description = "O novo limite por minuto e a nova cota mensal "
+                    + "valem a partir da próxima requisição; o que já foi usado no mês continua contando.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Plano alterado"),
+            @ApiResponse(responseCode = "400", description = "Dados inválidos", content = @Content),
+            @ApiResponse(responseCode = "401", description = "Header X-API-Key ausente", content = @Content),
+            @ApiResponse(responseCode = "403", description = "A chave informada não é a de admin", content = @Content),
+            @ApiResponse(responseCode = "404", description = "Chave não encontrada", content = @Content)
+    })
+    @PutMapping("/{id}/plano")
+    public EntityModel<ChaveApi> alterarPlano(@Parameter(description = "Id do(a) chave de API", example = "1") @PathVariable Long id,
+                                              @Valid @RequestBody AlteracaoPlano dados) {
+        ChaveApi chave = buscarChave(id);
+        chave.setPlano(dados.plano());
+        return toModel(repository.save(chave));
+    }
+
     @Operation(summary = "Revoga uma chave de API",
             description = "A chave deixa de ser aceita imediatamente. O registro é mantido para histórico.")
     @ApiResponses({
@@ -131,6 +161,7 @@ public class ChaveApiController {
     private EntityModel<ChaveApi> toModel(ChaveApi chave) {
         return EntityModel.of(chave,
                 linkTo(methodOn(ChaveApiController.class).buscar(chave.getId())).withSelfRel(),
+                linkTo(methodOn(ChaveApiController.class).alterarPlano(chave.getId(), null)).withRel("plano"),
                 linkTo(methodOn(ChaveApiController.class).revogar(chave.getId())).withRel("revogar"),
                 linkTo(ChaveApiController.class).withRel("chaves-api"));
     }
